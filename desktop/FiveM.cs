@@ -19,7 +19,7 @@ namespace FiveMExport {
         }
         static IEnumerable<string> Models(string source) {
             if(File.Exists(source)){
-                if(!Supported(source))throw new InvalidDataException("Sélectionnez un YDR, YDD ou YFT.");
+                if(!Supported(source))throw new InvalidDataException("Select a YDR, YDD or YFT file.");
                 yield return source;
                 yield break;
             }
@@ -39,9 +39,9 @@ namespace FiveMExport {
             using(var f=File.OpenRead(file)){
                 var r=new BinaryReader(f);
                 if(f.Length<16 || r.ReadUInt32()!=0x37435352)
-                    throw new InvalidDataException("Ressource RSC7 illisible ou protégée.");
-                if(r.ReadUInt32()!=version)throw new InvalidDataException("Version RSC7 non prise en charge (GTA V Legacy attendu).");
-                if(f.Length>512L*1024*1024)throw new InvalidDataException("Fichier supérieur à 512 Mio.");
+                    throw new InvalidDataException("Unreadable or protected RSC7 resource.");
+                if(r.ReadUInt32()!=version)throw new InvalidDataException("Unsupported RSC7 version. Select a GTA V Legacy model.");
+                if(f.Length>512L*1024*1024)throw new InvalidDataException("File exceeds 512 MiB.");
                 f.Position=0;
                 return r.ReadBytes((int)f.Length);
             }
@@ -52,18 +52,18 @@ namespace FiveMExport {
                     var ydr=new YdrFile();ydr.Load(Read(file,165));yield return ydr.Drawable;break;
                 case ".ydd":
                     var ydd=new YddFile();ydd.Load(Read(file,165));
-                    if(ydd.Drawables==null || ydd.Drawables.Length==0)throw new InvalidDataException("Dictionnaire de modèles vide.");
+                    if(ydd.Drawables==null || ydd.Drawables.Length==0)throw new InvalidDataException("Empty drawable dictionary.");
                     foreach(var drawable in ydd.Drawables)yield return drawable;
                     break;
                 case ".yft":
                     var yft=new YftFile();yft.Load(Read(file,162));
-                    if(yft.Fragment==null)throw new InvalidDataException("Fragment illisible.");
+                    if(yft.Fragment==null)throw new InvalidDataException("Unreadable fragment.");
                     yield return yft.Fragment.Drawable;
                     break;
             }
         }
         static string Num(float value){
-            if(float.IsNaN(value)||float.IsInfinity(value))throw new InvalidDataException("Coordonnée non finie.");
+            if(float.IsNaN(value)||float.IsInfinity(value))throw new InvalidDataException("Non-finite coordinate.");
             return value.ToString("R",CultureInfo.InvariantCulture);
         }
         static void Vertex(StreamWriter w,string kind,Vector3 v){
@@ -77,14 +77,14 @@ namespace FiveMExport {
             if(v==null || v.Info==null || v.VertexBytes==null || v.VertexCount<=0 ||
                (long)v.VertexCount*v.Info.Stride>v.VertexBytes.Length || !Has(v,VertexSemantics.Position) ||
                v.Info.GetComponentType(0)!=VertexComponentType.Float3)
-                throw new InvalidDataException("Disposition des sommets non prise en charge.");
+                throw new InvalidDataException("Unsupported vertex layout.");
             int n=(int)VertexSemantics.Normal, t=(int)VertexSemantics.TexCoord0;
             bool normals=Has(v,VertexSemantics.Normal), tex=Has(v,VertexSemantics.TexCoord0);
             var nt=v.Info.GetComponentType(n);var tt=v.Info.GetComponentType(t);
             if(normals && nt!=VertexComponentType.Float3 && nt!=VertexComponentType.RGBA8SNorm)
-                throw new InvalidDataException("Encodage des normales non pris en charge.");
+                throw new InvalidDataException("Unsupported normal encoding.");
             if(tex && tt!=VertexComponentType.Float2 && tt!=VertexComponentType.Half2)
-                throw new InvalidDataException("Encodage UV non pris en charge.");
+                throw new InvalidDataException("Unsupported UV encoding.");
             var normalMatrix=Matrix.Transpose(Matrix.Invert(bind));
             for(int i=0;i<v.VertexCount;i++){
                 Vertex(obj,"v",Vector3.TransformCoordinate(v.GetVector3(i,0),bind));
@@ -102,10 +102,10 @@ namespace FiveMExport {
                 }
             }
             var indices=g.IndexBuffer==null?null:g.IndexBuffer.Indices;
-            if(indices==null || indices.Length==0 || indices.Length%3!=0)throw new InvalidDataException("Indices de triangles invalides.");
+            if(indices==null || indices.Length==0 || indices.Length%3!=0)throw new InvalidDataException("Invalid triangle indices.");
             for(int i=0;i<indices.Length;i++){
                 int index=indices[i];
-                if(index>=v.VertexCount)throw new InvalidDataException("Indice de sommet hors limites.");
+                if(index>=v.VertexCount)throw new InvalidDataException("Vertex index out of range.");
                 if(i%3==0)obj.Write("f");
                 obj.Write(" "+(pos+index));
                 if(tex||normals)obj.Write("/");
@@ -138,10 +138,10 @@ namespace FiveMExport {
             if(reference==null)return;
             try{
                 var image=Resolve(reference,embedded,external);
-                if(image==null)throw new InvalidDataException("texture introuvable");
-                if((long)image.Width*image.Height>64L*1024*1024)throw new InvalidDataException("texture trop grande");
+                if(image==null)throw new InvalidDataException("texture not found");
+                if((long)image.Width*image.Height>64L*1024*1024)throw new InvalidDataException("texture too large");
                 var pixels=DDSIO.GetPixels(image,0);
-                if(pixels==null || pixels.Length!=4L*image.Width*image.Height)throw new InvalidDataException("format de texture non pris en charge");
+                if(pixels==null || pixels.Length!=4L*image.Width*image.Height)throw new InvalidDataException("unsupported texture format");
                 var bitmap=BitmapSource.Create(image.Width,image.Height,96,96,PixelFormats.Bgra32,null,pixels,4*image.Width);
                 var encoder=new PngBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(bitmap));
@@ -150,10 +150,10 @@ namespace FiveMExport {
             }catch(Exception ex){errors.Add(reference.Name+" : "+ex.Message);}
         }
         static void WriteDrawable(DrawableBase d,TextureDictionary external,string dir,List<string> errors){
-            if(d==null || d.DrawableModels==null)throw new InvalidDataException("Drawable absent.");
+            if(d==null || d.DrawableModels==null)throw new InvalidDataException("Missing drawable.");
             var lod=d.DrawableModels;
             var models=new[]{lod.High,lod.Med,lod.Low,lod.VLow}.FirstOrDefault(m=>m!=null && m.Length>0);
-            if(models==null)throw new InvalidDataException("LOD visuel absent.");
+            if(models==null)throw new InvalidDataException("No visual LOD found.");
             Directory.CreateDirectory(dir);
             var materials=new HashSet<ushort>();
             int pos=1,uv=1,norm=1;
@@ -174,7 +174,7 @@ namespace FiveMExport {
                         }
                     }
                 }
-                if(pos==1)throw new InvalidDataException("Aucune géométrie.");
+                if(pos==1)throw new InvalidDataException("No geometry found.");
                 File.Move(tmp,Path.Combine(dir,"model.obj"));
             }finally{if(File.Exists(tmp))File.Delete(tmp);}
         }
@@ -186,9 +186,9 @@ namespace FiveMExport {
             var errors=new List<string>();
             var exports=new List<string>();
             try{
-                if(Directory.Exists(dest)||File.Exists(dest))throw new IOException("La sortie existe déjà.");
+                if(Directory.Exists(dest)||File.Exists(dest))throw new IOException("Output already exists.");
                 if(Directory.Exists(source)&&dest.StartsWith(source.TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase))
-                    throw new IOException("Choisissez une sortie extérieure à la ressource.");
+                    throw new IOException("Select an output folder outside the resource.");
                 Directory.CreateDirectory(dest);
                 int index=0;
                 foreach(string file in Models(source)){
@@ -206,7 +206,7 @@ namespace FiveMExport {
                         }
                     }catch(Exception ex){errors.Add(file+" : "+ex.Message);}
                 }
-                if(exports.Count==0)errors.Add("Aucun modèle FiveM convertible.");
+                if(exports.Count==0)errors.Add("No supported FiveM models found.");
                 var json=new JavaScriptSerializer{MaxJsonLength=int.MaxValue};
                 File.WriteAllText(Path.Combine(dest,"report.json"),json.Serialize(new{source=source,models=exports,errors=errors}));
                 return errors.Count==0?0:2;

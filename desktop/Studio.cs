@@ -39,23 +39,30 @@ namespace ArmaStudio {
         Studio(string[] args){
             using(var xaml=Resource("Main.xaml"))window=(Window)XamlReader.Load(xaml);
             Get<Grid>("Scene").Children.Insert(0,orbit);
+            var solidToggle=Get<CheckBox>("SolidToggle");
+            solidToggle.Checked+=(s,e)=>orbit.SetSolid(true);
+            solidToggle.Unchecked+=(s,e)=>orbit.SetSolid(false);
+            var gridToggle=Get<CheckBox>("GridToggle");
+            gridToggle.Checked+=(s,e)=>orbit.SetGrid(true);
+            gridToggle.Unchecked+=(s,e)=>orbit.SetGrid(false);
+            Get<DockPanel>("Editor").IsEnabled=false;
             models=Get<ListBox>("Models");
             mods=Get<ComboBox>("Mods");
             library=ModCatalog.Text(Path.Combine(local,"mods-folder.txt")).Trim();
             Get<Button>("ChooseFiveM").Click+=async (s,e)=>await ChooseGame(true);
             Get<Button>("ChooseArma").Click+=async (s,e)=>await ChooseGame(false);
             Get<Button>("ChangeGame").Click+=(s,e)=>{
-                Get<DockPanel>("Editor").Visibility=Visibility.Collapsed;
+                Get<DockPanel>("Editor").IsEnabled=false;
                 Get<Grid>("Home").Visibility=Visibility.Visible;
             };
             mods.SelectionChanged+=(s,e)=>Selection();
             Get<Button>("Refresh").Click+=async (s,e)=>await Refresh();
             Get<Button>("Library").Click+=async (s,e)=>{
-                string chosen=PickFolder("Choisir le dossier qui contient les mods",BrowseRoot());
+                string chosen=PickFolder("Choose your mod library",BrowseRoot());
                 if(chosen==null)return;
                 library=chosen;
                 try{Directory.CreateDirectory(local);File.WriteAllText(Path.Combine(local,"mods-folder.txt"),library);}
-                catch(Exception ex){Status("Bibliothèque active pour cette session. "+ex.Message);}
+                catch(Exception ex){Status("Library selected for this session. "+ex.Message);}
                 await Refresh();
             };
             Get<Button>("ConvertButton").Click+=(s,e)=>{
@@ -67,21 +74,21 @@ namespace ArmaStudio {
                 if(choice!=null)await Show(choice.PathName);
             };
             Get<Button>("OpenObj").Click+=(s,e)=>{
-                var file=new OpenFileDialog{Filter="Modèle Wavefront (*.obj)|*.obj",Multiselect=true};
+                var file=new OpenFileDialog{Filter="Wavefront model (*.obj)|*.obj",Multiselect=true};
                 if(file.ShowDialog(window)==true)Populate(file.FileNames);
             };
             Get<Button>("Folder").Click+=(s,e)=>{
-                string folder=PickFolder(fiveM?"Choisir le dossier de la ressource FiveM":"Choisir le dossier du mod",fiveM?"":BrowseRoot());
+                string folder=PickFolder(fiveM?"Select a FiveM resource folder":"Select a mod folder",fiveM?"":BrowseRoot());
                 if(folder!=null)SelectSource(folder);
             };
             Get<Button>("Archive").Click+=(s,e)=>{
-                var file=new OpenFileDialog{Filter=fiveM?"Modèles FiveM (*.ydr;*.ydd;*.yft)|*.ydr;*.ydd;*.yft":"Archives Arma (*.pbo;*.zip)|*.pbo;*.zip",InitialDirectory=fiveM?"":BrowseRoot()};
+                var file=new OpenFileDialog{Filter=fiveM?"FiveM models (*.ydr;*.ydd;*.yft)|*.ydr;*.ydd;*.yft":"Arma archives (*.pbo;*.zip)|*.pbo;*.zip",InitialDirectory=fiveM?"":BrowseRoot()};
                 if(file.ShowDialog(window)==true)SelectSource(file.FileName);
             };
             Get<Button>("Results").Click+=(s,e)=>{if(Directory.Exists(output))Process.Start("explorer.exe",Quote(output));};
             Get<Button>("Frame").Click+=(s,e)=>orbit.Frame();
             window.PreviewKeyDown+=(s,e)=>{if(e.Key==Key.F && !(Keyboard.FocusedElement is TextBox)){orbit.Frame();e.Handled=true;}};
-            window.Closing+=(s,e)=>{if(busy){e.Cancel=true;Status("Conversion en cours. La fenêtre pourra être fermée à la fin du traitement.");}};
+            window.Closing+=(s,e)=>{if(busy){e.Cancel=true;Status("Conversion is running. You can close the window when it finishes.");}};
             if(args.Length>0)window.ContentRendered+=async (s,e)=>{
                 await ChooseGame(false);
                 Populate(args.Select(Path.GetFullPath));
@@ -91,18 +98,19 @@ namespace ArmaStudio {
             fiveM=fromFiveM;
             Get<Grid>("Home").Visibility=Visibility.Collapsed;
             Get<DockPanel>("Editor").Visibility=Visibility.Visible;
+            Get<DockPanel>("Editor").IsEnabled=true;
             Get<TextBlock>("GameTitle").Text=fiveM?"FiveM → OBJ":"Arma 3 → OBJ";
-            Get<TextBlock>("InputTitle").Text=fiveM?"Ressource FiveM":"Mods installés";
+            Get<TextBlock>("InputTitle").Text=fiveM?"FiveM resource":"Installed mods";
             Get<TextBlock>("Instructions").Text=fiveM?
-                "Choisissez un modèle GTA V Legacy ou le dossier stream d’une ressource FiveM, puis cliquez sur Convertir.":
-                "Abonnez-vous au mod dans Steam et attendez la fin du téléchargement. Actualisez la liste, sélectionnez le mod, puis cliquez sur Convertir.";
+                "Choose a GTA V Legacy model or a resource’s stream folder, then convert it to OBJ.":
+                "Download the mod in Steam, refresh the list, then select the installed mod to convert.";
             Get<WrapPanel>("ArmaLibrary").Visibility=fiveM?Visibility.Collapsed:Visibility.Visible;
             Get<Button>("Archive").Content=fiveM?"YDR / YDD / YFT…":"PBO / ZIP…";
             mods.Items.Clear();
             Populate(new string[0]);
             output=null;
             Get<Button>("Results").IsEnabled=false;
-            Status("Prêt.");
+            Status("Ready");
             if(fiveM)Selection();
             else await Refresh();
         }
@@ -120,7 +128,7 @@ namespace ArmaStudio {
                 foreach(var mod in found)mods.Items.Add(mod);
                 if(previous!=null && (Directory.Exists(previous.PathName)||File.Exists(previous.PathName)))SelectSource(previous.PathName);
                 Selection();
-            }catch(Exception ex){Status("Lecture des dossiers de mods impossible. "+ex.Message);}
+            }catch(Exception ex){Status("Could not read the mod folders. "+ex.Message);}
             finally{Get<StackPanel>("Controls").IsEnabled=true;Get<Button>("ChangeGame").IsEnabled=true;}
         }
         void SelectSource(string path){
@@ -131,32 +139,32 @@ namespace ArmaStudio {
         void Selection(){
             var mod=mods.SelectedItem as ModSource;
             var hint=Get<TextBlock>("SourceHint");
-            hint.Text=mod!=null?mod.PathName:fiveM?"Aucune ressource sélectionnée.":mods.Items.Count==0?"Aucun mod détecté. Choisissez une bibliothèque ou ouvrez un dossier ou une archive.":"Choisissez un mod dans la liste.";
+            hint.Text=mod!=null?mod.PathName:fiveM?"No resource selected.":mods.Items.Count==0?"No installed mods found. Choose a library, folder or archive.":"Select an installed mod.";
             hint.ToolTip=mod!=null?mod.PathName:fiveM?null:string.Join(Environment.NewLine,roots);
             Get<Button>("ConvertButton").IsEnabled=mod!=null;
         }
         static Stream Resource(string name) {
             var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream(name);
-            if(stream==null)throw new FileNotFoundException("Ressource absente",name);
+            if(stream==null)throw new FileNotFoundException("Missing resource",name);
             return stream;
         }
         async Task Show(string path) {
             int request=++revision;
             try{
-                Status("Chargement de "+Label(path)+"…");
+                Status("Loading "+Label(path)+"…");
                 LoadedModel m=await Task.Run(()=>ObjReader.Read(path));
                 if(request!=revision)return;
                 orbit.ShowModel(m.Group);
                 Get<TextBlock>("Empty").Visibility=Visibility.Collapsed;
                 Get<TextBlock>("TitleText").Text=Label(path);
-                Get<TextBlock>("Stats").Text=m.Vertices+" sommets   ·   "+m.Faces+" faces";
+                Get<TextBlock>("Stats").Text=m.Vertices+" vertices   ·   "+m.Faces+" faces";
                 Status(m.Notice==""?path:m.Notice+"  "+path);
-            }catch(Exception ex){if(request==revision)Status("Ouverture impossible. "+ex.Message);}
+            }catch(Exception ex){if(request==revision)Status("Could not open model. "+ex.Message);}
         }
         void Populate(IEnumerable<string> paths){
             revision++;
             orbit.Clear();
-            Get<TextBlock>("TitleText").Text="Vue 3D";
+            Get<TextBlock>("TitleText").Text="Scene";
             Get<TextBlock>("Stats").Text="";
             Get<TextBlock>("Empty").Visibility=Visibility.Visible;
             models.Items.Clear();
@@ -215,28 +223,28 @@ namespace ArmaStudio {
         }
         async void StartImport(string flag,string source){
             if(busy)return;
-            if(!Directory.Exists(source)&&!File.Exists(source)){Status("Mod introuvable. Actualisez la liste.");return;}
-            string parent=PickFolder("Choisir où enregistrer les modèles convertis");
+            if(!Directory.Exists(source)&&!File.Exists(source)){Status("Source not found. Refresh the list.");return;}
+            string parent=PickFolder("Choose where to save the converted models");
             if(parent==null)return;
-            string destination=Path.Combine(parent,(fiveM?"FiveM-OBJ-":"Arma2OBJ-")+DateTime.Now.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N").Substring(0,4));
+            string destination=Path.Combine(parent,(fiveM?"AnyRoblox-FiveM-":"AnyRoblox-Arma3-")+DateTime.Now.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N").Substring(0,4));
             output=destination;
             busy=true;
             Get<Button>("ChangeGame").IsEnabled=false;
             Get<StackPanel>("Controls").IsEnabled=false;
             Get<Button>("OpenObj").IsEnabled=false;
             Get<Button>("Results").IsEnabled=false;
-            Status("Conversion en cours…");
+            Status("Converting…");
             try{
                 int code=await Task.Run(()=>Convert(local,flag,source,destination));
                 string[] objs=Directory.GetFiles(destination,"model.obj",SearchOption.AllDirectories).OrderBy(x=>x).ToArray();
                 string issues=ErrorText(Path.Combine(destination,"report.json"));
                 Populate(objs);
                 if(code!=0){
-                    string message=issues==""?"Consultez les rapports par modèle dans le dossier de sortie.":issues;
-                    MessageBox.Show(window,message,"Conversion incomplète",MessageBoxButton.OK,MessageBoxImage.Information);
+                    string message=issues==""?"See the model reports in the output folder.":issues;
+                    MessageBox.Show(window,message,"Conversion incomplete",MessageBoxButton.OK,MessageBoxImage.Information);
                     Status(message);
                 }
-            }catch(Exception ex){Status("Conversion interrompue. "+ex.Message);}
+            }catch(Exception ex){Status("Conversion stopped. "+ex.Message);}
             finally{
                 busy=false;Get<StackPanel>("Controls").IsEnabled=true;Get<Button>("OpenObj").IsEnabled=true;
                 Get<Button>("ChangeGame").IsEnabled=true;
@@ -249,7 +257,7 @@ namespace ArmaStudio {
                 var app=new Application();
                 var studio=new Studio(args);
                 app.Run(studio.window);
-            }catch(Exception ex){MessageBox.Show(ex.Message,"Arma2OBJ Studio");}
+            }catch(Exception ex){MessageBox.Show(ex.Message,"AnyRoblox");}
         }
     }
 }

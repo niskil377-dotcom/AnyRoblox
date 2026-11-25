@@ -17,11 +17,11 @@ impl Entry<'_> {
         }
         ensure!(
             self.method == 0x43707273,
-            "méthode PBO inconnue 0x{:08x}",
+            "Unknown PBO compression method 0x{:08x}",
             self.method
         );
         let length = self.original as usize;
-        ensure!(length as u64 <= crate::LIMIT, "entrée Cprs trop grande");
+        ensure!(length as u64 <= crate::LIMIT, "Cprs entry is too large");
         let mut r = Reader(self.data);
         let mut out = Vec::new();
         while out.len() < length {
@@ -38,7 +38,7 @@ impl Entry<'_> {
                     let count = usize::from(pair[1] & 15) + 3;
                     ensure!(
                         distance != 0 && count <= length - out.len(),
-                        "référence Cprs invalide"
+                        "Invalid Cprs reference"
                     );
                     for _ in 0..count {
                         let byte = out
@@ -54,7 +54,7 @@ impl Entry<'_> {
         let checksum = out.iter().fold(0u32, |s, &b| s.wrapping_add(u32::from(b)));
         ensure!(
             r.word()? == checksum && r.0.is_empty(),
-            "somme ou longueur Cprs incorrecte"
+            "Invalid Cprs checksum or length"
         );
         Ok(Cow::Owned(out))
     }
@@ -94,16 +94,16 @@ pub fn parse(bytes: &[u8]) -> Result<Archive<'_>> {
             }
             ensure!(
                 method | original | reserved | timestamp | size == 0,
-                "terminaison PBO invalide"
+                "Invalid PBO terminator"
             );
             break;
         }
         let path = safe_path(&name)?;
         ensure!(
             names.insert(path.to_string_lossy().to_ascii_lowercase()),
-            "entrée PBO dupliquée"
+            "Duplicate PBO entry"
         );
-        ensure!(headers.len() < 100_000, "trop d'entrées PBO");
+        ensure!(headers.len() < 100_000, "Too many PBO entries");
         headers.push((path, method, size, original));
     }
     let mut files = Vec::new();
@@ -117,8 +117,8 @@ pub fn parse(bytes: &[u8]) -> Result<Archive<'_>> {
     }
     ensure!(
         r.0.is_empty() || (r.0.len() == 21 && r.0[0] == 0),
-        "fin de PBO non reconnue"
+        "Unrecognized PBO trailer"
     );
-    ensure!(properties || !files.is_empty(), "PBO vide sans signature");
+    ensure!(properties || !files.is_empty(), "Empty PBO without signature");
     Ok(Archive { prefix, files })
 }

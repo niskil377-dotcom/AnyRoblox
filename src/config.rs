@@ -62,7 +62,7 @@ pub fn inventory(file: &Path, path: String) -> RigConfig {
         .filter(|m| m.len() <= 1024 * 1024)
         .and_then(|_| fs::read_to_string(file).ok());
     let Some(text) = text.filter(|s| !s.contains('\0')) else {
-        info.note = Some("Configuration binaire, illisible ou supérieure à 1 Mio".into());
+        info.note = Some("Binary or unreadable configuration, or file exceeds 1 MiB".into());
         return info;
     };
     let tokens = tokens(&text);

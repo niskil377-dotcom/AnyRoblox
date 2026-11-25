@@ -21,10 +21,10 @@ pub const LIMIT: u64 = 512 * 1024 * 1024;
 
 pub fn read_limited(path: &Path) -> Result<Vec<u8>> {
     let f = File::open(path)?;
-    ensure!(f.metadata()?.len() <= LIMIT, "fichier supérieur à 512 Mio");
+    ensure!(f.metadata()?.len() <= LIMIT, "File exceeds 512 MiB");
     let mut bytes = Vec::new();
     f.take(LIMIT + 1).read_to_end(&mut bytes)?;
-    ensure!(bytes.len() as u64 <= LIMIT, "fichier supérieur à 512 Mio");
+    ensure!(bytes.len() as u64 <= LIMIT, "File exceeds 512 MiB");
     Ok(bytes)
 }
 
@@ -43,7 +43,7 @@ pub fn safe_path(raw: &str) -> Result<PathBuf> {
                 && !part.contains([':', '<', '>', '"', '|', '?', '*'])
                 && !part.chars().any(char::is_control)
                 && !device,
-            "chemin d'archive invalide : {raw:?}"
+            "Invalid archive path : {raw:?}"
         );
         path.push(part);
     }
@@ -72,12 +72,12 @@ fn files(dir: &Path) -> Result<Vec<PathBuf>> {
 }
 fn new_file(dir: &Path, rel: &Path) -> Result<File> {
     let path = dir.join(rel);
-    fs::create_dir_all(path.parent().context("parent absent")?)?;
+    fs::create_dir_all(path.parent().context("Missing parent directory")?)?;
     Ok(OpenOptions::new().write(true).create_new(true).open(path)?)
 }
 fn unzip(bytes: &[u8], dir: &Path) -> Result<()> {
     let mut zip = zip::ZipArchive::new(std::io::Cursor::new(bytes))?;
-    ensure!(zip.len() <= 100_000, "trop d'entrées ZIP");
+    ensure!(zip.len() <= 100_000, "Too many ZIP entries");
     let mut remaining = 2 * 1024 * 1024 * 1024u64;
     for i in 0..zip.len() {
         let item = zip.by_index(i)?;
@@ -88,12 +88,12 @@ fn unzip(bytes: &[u8], dir: &Path) -> Result<()> {
         let size = item.size();
         ensure!(
             size <= LIMIT && size <= remaining,
-            "limite de décompression ZIP dépassée"
+            "ZIP extraction limit exceeded"
         );
         let mut out = new_file(dir, &name)?;
         ensure!(
             std::io::copy(&mut item.take(size + 1), &mut out)? == size,
-            "taille ZIP incorrecte"
+            "ZIP size mismatch"
         );
         remaining -= size;
     }
@@ -181,7 +181,7 @@ impl Batch {
                 };
                 ensure!(
                     self.extracted_bytes + size <= 2 * 1024 * 1024 * 1024,
-                    "limite de 2 Gio pour les PBO du lot"
+                    "Batch exceeds the 2 GiB PBO limit"
                 );
                 let contents = entry.contents()?;
                 new_file(&dir, &entry.path)?.write_all(&contents)?;
@@ -216,13 +216,13 @@ impl Batch {
                     let f = File::open(marker)?;
                     let mut s = String::new();
                     f.take(4097).read_to_string(&mut s)?;
-                    ensure!(s.len() < 4097, "préfixe trop long");
+                    ensure!(s.len() < 4097, "Prefix is too long");
                     safe_path(s.lines().next().unwrap_or("").trim())
                 })();
                 match prefix {
                     Ok(prefix) => {
                         prefixes
-                            .insert(marker.parent().context("parent absent")?.to_owned(), prefix);
+                            .insert(marker.parent().context("Missing parent directory")?.to_owned(), prefix);
                     }
                     Err(e) => run.errors.push(format!("{}: {e:#}", marker.display())),
                 }
@@ -259,7 +259,7 @@ fn pipeline(opt: &Options, run: &mut Run) -> Result<()> {
             run.cached_file = Some(path.clone());
             path
         }
-        _ => bail!("choisir une seule source"),
+        _ => bail!("Select one input source"),
     };
     let mut batch = Batch::default();
     if path.is_dir() {
@@ -281,23 +281,23 @@ fn pipeline(opt: &Options, run: &mut Run) -> Result<()> {
             ] {
                 if data.starts_with(magic) {
                     run.format = format.to_owned();
-                    bail!("archive {format} non prise en charge ; extraire localement puis utiliser --input");
+                    bail!("Unsupported {format} archive. Extract locally and use --input");
                 }
             }
             run.format = "inconnu".into();
-            let source = path.file_name().context("nom absent")?;
+            let source = path.file_name().context("Missing name")?;
             batch
                 .archive(&data, Path::new(source), work.path(), run)
                 .with_context(|| {
                     format!(
-                        "format inconnu ou PBO invalide (octets initiaux {:02x?})",
+                        "Unknown format or invalid PBO (first bytes {:02x?})",
                         &data[..data.len().min(8)]
                     )
                 })?;
             run.format = "pbo".into();
         }
     }
-    ensure!(!batch.models.is_empty(), "aucun modèle P3D trouvé");
+    ensure!(!batch.models.is_empty(), "No P3D models found");
     for (i, item) in batch.models.iter().enumerate() {
         let ModelSource {
             file,
@@ -313,7 +313,7 @@ fn pipeline(opt: &Options, run: &mut Run) -> Result<()> {
         let dir = opt.output.join(&name);
         let mut model = report::Model {
             source: source.clone(),
-            rig: "Squelette non interprété. Les sélections MLOD observées figurent dans named_selections.",
+            rig: "Skeleton not interpreted. Observed MLOD selections are listed under named_selections.",
             rig_configs: batch.configs.iter().filter(|(cfg,_)|cfg.parent().is_some_and(|p|file.starts_with(p)))
                 .map(|(cfg,name)|config::inventory(cfg,name.clone())).collect(),
             ..Default::default()
@@ -321,7 +321,7 @@ fn pipeline(opt: &Options, run: &mut Run) -> Result<()> {
         let result = (|| -> Result<()> {
             fs::create_dir(&dir)?;
             if let Some(message) = error {
-                bail!("extraction PBO : {message}")
+                bail!("PBO extraction: {message}")
             }
             let mesh = p3d::load(file, opt.debinarizer.as_deref(), &opt.versions, &mut model)?;
             obj::export(
@@ -356,8 +356,8 @@ fn destination(path: &Path) -> Result<PathBuf> {
         return Ok(path.canonicalize()?);
     }
     let abs = std::path::absolute(path)?;
-    let parent = abs.parent().context("destination invalide")?;
-    Ok(destination(parent)?.join(abs.file_name().context("nom de destination absent")?))
+    let parent = abs.parent().context("Invalid output path")?;
+    Ok(destination(parent)?.join(abs.file_name().context("Missing output name")?))
 }
 
 pub fn run(opt: &Options) -> Result<bool> {
@@ -365,19 +365,19 @@ pub fn run(opt: &Options) -> Result<bool> {
     if let Some(input) = &opt.input {
         ensure!(
             !out.starts_with(input.canonicalize()?),
-            "la sortie doit être extérieure à l'entrée"
+            "Choose an output folder outside the input"
         );
     } else {
         let cache = destination(&opt.cache)?;
         ensure!(
             !out.starts_with(&cache) && !cache.starts_with(&out),
-            "sortie et cache doivent être séparés"
+            "Output and cache must use separate folders"
         );
     }
     fs::create_dir_all(&out)?;
     ensure!(
         fs::read_dir(&out)?.next().is_none(),
-        "choisir un dossier de sortie vide"
+        "Choose an empty output folder"
     );
     let lock_path = out.join(".arma2obj-running");
     let lock = OpenOptions::new()

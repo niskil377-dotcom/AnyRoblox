@@ -24,7 +24,7 @@ impl Assets {
     fn find(&self, name: &Path, parent: &Path) -> Result<Option<&Path>> {
         for candidate in [name.to_owned(), parent.join(name)] {
             if let Some(paths) = self.0.get(&key(&candidate)) {
-                ensure!(paths.len() == 1, "texture ambiguë {}", candidate.display());
+                ensure!(paths.len() == 1, "Ambiguous texture {}", candidate.display());
                 return Ok(paths.first().map(PathBuf::as_path));
             }
         }
@@ -54,14 +54,14 @@ pub fn export(
     }
     let Some(paa) = assets.find(&path, parent)? else {
         report.missing_textures.push(name.to_owned());
-        anyhow::bail!("texture absente : {name}")
+        anyhow::bail!("Missing texture: {name}")
     };
     ensure!(
         path.extension()
             .is_some_and(|e| e.eq_ignore_ascii_case("paa")),
-        "format de texture non pris en charge"
+        "Unsupported texture format"
     );
-    let exe = tool.context("aucun convertisseur PAA configuré")?;
+    let exe = tool.context("No PAA converter configured")?;
     let tmp = tempfile::tempdir()?;
     let input = tmp.path().join("input.paa");
     let png = tmp.path().join("output.png");
@@ -78,6 +78,6 @@ pub fn export(
         .arg(input)
         .arg(&png)
         .status()?;
-    ensure!(status.success(), "convertisseur PAA : {status}");
+    ensure!(status.success(), "PAA converter: {status}");
     write_png(&png, out)
 }

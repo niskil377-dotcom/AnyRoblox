@@ -21,9 +21,9 @@ try {
         if (!(Test-Path "cache\outils\$name")) { throw "Placer $name dans cache/outils avant la compilation graphique." }
         $resources += "/resource:cache\outils\$name,$name"
     }
-    & "$framework\csc.exe" /nologo /codepage:65001 /target:winexe /platform:x64 /optimize+ '/out:Arma2OBJ Studio.exe' @refs @resources desktop\Studio.cs desktop\Viewer.cs desktop\ModCatalog.cs
+    & "$framework\csc.exe" /nologo /codepage:65001 /target:winexe /platform:x64 /optimize+ '/out:AnyRoblox.exe' @refs @resources desktop\Studio.cs desktop\Viewer.cs desktop\ModCatalog.cs
     if ($LASTEXITCODE) { throw 'Compilation graphique en échec.' }
-    Get-Item 'Arma2OBJ Studio.exe' | Select-Object FullName,Length
+    Get-Item 'AnyRoblox.exe' | Select-Object FullName,Length
 } finally { Pop-Location }
 
 

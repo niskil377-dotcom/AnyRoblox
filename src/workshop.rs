@@ -43,16 +43,16 @@ pub fn id(s: &str) -> Result<String> {
                     url.path().trim_end_matches('/'),
                     "/sharedfiles/filedetails" | "/workshop/filedetails"
                 ),
-            "URL Workshop Steam invalide"
+            "Invalid Steam Workshop URL"
         );
         let mut ids = url.query_pairs().filter(|(k, _)| k == "id");
-        let value = ids.next().context("id absent")?.1.into_owned();
-        ensure!(ids.next().is_none(), "id ambigu");
+        let value = ids.next().context("Missing item ID")?.1.into_owned();
+        ensure!(ids.next().is_none(), "Ambiguous item ID");
         value
     };
     ensure!(
         digits.bytes().all(|b| b.is_ascii_digit()) && digits.parse::<u64>()? > 0,
-        "identifiant invalide"
+        "Invalid ID"
     );
     Ok(digits.parse::<u64>()?.to_string())
 }
@@ -78,37 +78,37 @@ pub fn fetch(spec: &str, cache: &Path, metadata: &mut Option<Details>) -> Result
                 .split_once("<title>")
                 .and_then(|(_, s)| s.split_once("</title>"))
                 .map(|(s, _)| s)
-                .unwrap_or("sans titre HTML");
-            bail!("fiche Reforger accessible ({title}). Aucun téléchargement Reforger implémenté. Utiliser --input avec des fichiers Arma 3 compatibles.");
+                .unwrap_or("untitled page");
+            bail!("Reforger page accessible ({title}). Reforger downloads are unsupported. Use --input with compatible Arma 3 files.");
         }
     }
     let id = id(spec)?;
-    let net="accès réseau à Steam impossible ou interrompu ; si le réseau bloque Steam, joindre l'archive et utiliser --input";
+    let net="Steam could not be reached. If the network blocks Steam, supply the archive with --input";
     let envelope: Envelope = client
         .post("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/")
         .form(&[("itemcount", "1"), ("publishedfileids[0]", &id)])
         .send()
         .context(net)?
         .error_for_status()
-        .context("API Steam refusée ou indisponible ; joindre l'archive pour --input")?
+        .context("Steam API denied or unavailable. Supply the archive with --input")?
         .json()?;
     *metadata = envelope.response.publishedfiledetails.into_iter().next();
-    let item = metadata.as_ref().context("fiche Steam absente")?;
+    let item = metadata.as_ref().context("Steam item details missing")?;
     ensure!(
         item.result == 1 && item.publishedfileid == id,
-        "fiche inaccessible (résultat Steam {})",
+        "Item unavailable (Steam result {})",
         item.result
     );
     ensure!(
         item.visibility == Some(0) && item.banned == Some(0),
-        "mod non public ou retiré"
+        "Mod is private or removed"
     );
     ensure!(
         item.consumer_app_id == 107410,
-        "application différente d'Arma 3 ({})",
+        "Not an Arma 3 Workshop item ({})",
         item.consumer_app_id
     );
-    ensure!(!item.file_url.is_empty(),"Steam ne fournit pas de file_url publique pour {}. Joindre l'archive ou utiliser --input avec le dossier local.",item.title);
+    ensure!(!item.file_url.is_empty(),"Steam provides no public file_url for {}. Supply the archive or select the installed mod folder.",item.title);
     let dir = cache.join(id);
     fs::create_dir_all(&dir)?;
     let expected = item.file_size.parse::<u64>().ok();
@@ -120,7 +120,7 @@ pub fn fetch(spec: &str, cache: &Path, metadata: &mut Option<Details>) -> Result
             let size = fs::metadata(path)?.len();
             ensure!(
                 size <= crate::LIMIT && expected.is_none_or(|n| n == size),
-                "taille incorrecte dans le cache {}",
+                "Invalid cached file size {}",
                 path.display()
             );
             return Ok(path.clone());
@@ -131,16 +131,16 @@ pub fn fetch(spec: &str, cache: &Path, metadata: &mut Option<Details>) -> Result
         .send()
         .context(net)?
         .error_for_status()
-        .context("téléchargement Steam refusé ou indisponible ; utiliser --input")?;
+        .context("Steam download denied or unavailable. Use --input")?;
     let mut tmp = tempfile::NamedTempFile::new_in(dir)?;
     let n = io::copy(
         &mut (&mut response).take(crate::LIMIT + 1),
         tmp.as_file_mut(),
     )
     .context(net)?;
-    ensure!(n <= crate::LIMIT, "archive trop volumineuse");
+    ensure!(n <= crate::LIMIT, "Archive is too large");
     if let Some(expected) = expected {
-        ensure!(expected == n, "taille téléchargée incorrecte");
+        ensure!(expected == n, "Downloaded size mismatch");
     }
     if let Some(path) = versioned {
         match tmp.persist_noclobber(&path) {

@@ -1,4 +1,4 @@
-# arma2obj
+# AnyRoblox (Any Games To Roblox)
 
 Convertit le LOD visuel principal des modèles Arma 3 en Wavefront OBJ, avec matériaux MTL et textures diffuses PNG. Le mode local fonctionne hors ligne. Le mode Workshop utilise exclusivement les métadonnées et le lien de fichier rendus publics par Steam.
 
@@ -6,9 +6,11 @@ Convertit le LOD visuel principal des modèles Arma 3 en Wavefront OBJ, avec mat
 
 ### Application graphique Windows x64
 
-Double-cliquer sur **Arma2OBJ Studio.exe** à la racine du projet. L’accueil propose **FiveM → OBJ** et **Arma 3 → OBJ**. Le bouton **Changer de jeu** ramène à cet écran.
+L’interface est en anglais. La vue 3D occupe la partie gauche de la fenêtre. À droite, **Outliner** permet de sélectionner un modèle et **Conversion Properties** regroupe les sources et les options d’export. Faites glisser les séparateurs pour redimensionner les panneaux. **Grid** affiche la grille au sol et **Solid** permet d’inspecter la géométrie avec un matériau neutre.
 
-**FiveM.** Choisir un fichier YDR, YDD ou YFT de GTA V Legacy, ou sélectionner le dossier `stream` d’une ressource locale. Cliquer sur **Convertir** et choisir un emplacement de sortie. Studio ouvre les OBJ produits dans la visionneuse et conserve le rapport du lot dans le dossier de sortie.
+Télécharger [AnyRoblox.exe pour Windows x64](https://github.com/niskil377-dotcom/AnyRoblox/releases/latest/download/AnyRoblox.exe), puis le lancer. L’accueil propose **FiveM → OBJ** et **Arma 3 → OBJ**. Le bouton **Switch workspace** ramène à cet écran.
+
+**FiveM.** Choisir un fichier YDR, YDD ou YFT de GTA V Legacy, ou sélectionner le dossier `stream` d’une ressource locale. Cliquer sur **Convert to OBJ** et choisir un emplacement de sortie. Studio ouvre les OBJ produits dans la visionneuse et conserve le rapport du lot dans le dossier de sortie.
 
 Le parcours FiveM lit le premier LOD visuel disponible, les triangles, les normales, les UV et le matériau de chaque géométrie. Un YDD peut produire plusieurs OBJ. Pour un YFT, l’export couvre le drawable principal. Les squelettes animés, fragments de dégâts, simulations de tissu et collisions restent hors export. Les textures diffuses du paramètre DiffuseSampler peuvent être exportées en PNG depuis le modèle ou un YTD homonyme voisin. Les dépendances de textures partagées entre ressources demandent une résolution supplémentaire. Les fichiers protégés et les formats Enhanced ne sont pas pris en charge.
 
@@ -17,12 +19,12 @@ La compilation graphique récupère les paquets NuGet CodeWalker.Core 1.0.3 et S
 **Arma 3**
 
 1. S’abonner au mod dans le Workshop Steam d’Arma 3 et attendre la fin du téléchargement dans le client Steam.
-2. Ouvrir Studio, ou cliquer sur **Actualiser** si le téléchargement vient de finir. Sélectionner le mod dans **Mods installés**.
-3. Cliquer sur **Convertir** et choisir un emplacement de sortie extérieur au mod. Les modèles s’affichent dans la vue 3D. **Ouvrir la sortie** donne accès aux exports et aux rapports.
+2. Ouvrir Studio, ou cliquer sur **Refresh** si le téléchargement vient de finir. Sélectionner le mod dans **Installed mods**.
+3. Cliquer sur **Convert to OBJ** et choisir un emplacement de sortie extérieur au mod. Les modèles s’affichent dans la vue 3D. **Open output folder** donne accès aux exports et aux rapports.
 
-Studio examine les bibliothèques Steam déclarées dans `libraryfolders.vdf`, notamment `steamapps/workshop/content/107410`, les dossiers `!Workshop` et `mods` du jeu ainsi que le dossier `mods` à côté de l’exécutable. **Bibliothèque…** ajoute un dossier de mods et mémorise ce choix. **Dossier…** et **PBO / ZIP…** permettent de sélectionner directement une source avant de cliquer sur **Convertir**.
+Studio examine les bibliothèques Steam déclarées dans `libraryfolders.vdf`, notamment `steamapps/workshop/content/107410`, les dossiers `!Workshop` et `mods` du jeu ainsi que le dossier `mods` à côté de l’exécutable. **Library…** ajoute un dossier de mods et mémorise ce choix. **Folder…** et **PBO / ZIP…** permettent de sélectionner directement une source avant de cliquer sur **Convert to OBJ**.
 
-Pour inspecter un export existant, choisir **Ouvrir un OBJ…**. Dans la vue 3D, tourner la molette pour zoomer, maintenir le bouton central et glisser pour orbiter, ou ajouter Maj pour déplacer le point de vue. La touche F recadre le modèle.
+Pour inspecter un export existant, choisir **Open OBJ…**. Dans la vue 3D, tourner la molette pour zoomer, maintenir le bouton central et glisser pour orbiter, ou ajouter Maj pour déplacer le point de vue. La touche F recadre le modèle.
 
 L’exécutable contient la visionneuse WPF, la CLI Rust, P3DDebin et HEMTT. Il utilise .NET Framework 4.8 sous Windows x64. Pour le reconstruire, placer les outils de conversion dans `cache/outils` puis lancer `./desktop/build.ps1` sous PowerShell.
 

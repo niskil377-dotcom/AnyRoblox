@@ -5,26 +5,26 @@ use clap::{ArgGroup, Parser};
 use std::{path::PathBuf, process::ExitCode};
 
 #[derive(Parser)]
-#[command(version, about="Convertit les modèles Arma 3 en OBJ/MTL",group(ArgGroup::new("source").required(true).args(["input","workshop"])))]
+#[command(version, about="Convert Arma 3 models to OBJ/MTL",group(ArgGroup::new("source").required(true).args(["input","workshop"])))]
 struct Cli {
-    /// URL Steam Workshop ou publishedfileid
+    /// Steam Workshop URL or numeric item ID
     #[arg(long)]
     workshop: Option<String>,
-    /// Dossier local, archive ZIP ou PBO
+    /// Local mod folder, ZIP archive or PBO file
     #[arg(long)]
     input: Option<PathBuf>,
-    /// Dossier de sortie vide ou à créer
+    /// Empty or new output folder
     #[arg(long)]
     output: PathBuf,
     #[arg(long, default_value = "./cache")]
     cache: PathBuf,
-    /// Débinariseur ODOL (P3DDebin, P3DDebinarizer ou adaptateur)
+    /// ODOL debinarizer (P3DDebin, P3DDebinarizer or adapter)
     #[arg(long, env = "ARMA2OBJ_DEBINARIZER")]
     debinarizer: Option<PathBuf>,
-    /// Versions ODOL acceptées par cet exécutable (liste séparée par des virgules)
+    /// ODOL versions supported by the executable (comma-separated)
     #[arg(long, value_delimiter = ',', default_value = "75")]
     odol_version: Vec<u32>,
-    /// Convertisseur de textures (HEMTT ou adaptateur)
+    /// Texture converter (HEMTT or adapter)
     #[arg(long, env = "ARMA2OBJ_PAA_TOOL")]
     paa_tool: Option<PathBuf>,
 }

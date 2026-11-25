@@ -22,7 +22,7 @@ pub struct Mesh {
 fn read_lod(r: &mut Reader, report: &mut Model) -> Result<(f32, Mesh)> {
     ensure!(
         r.take(4)? == b"P3DM" && r.word()? == 28 && r.word()? == 256,
-        "LOD P3DM 28/256 attendu"
+        "Expected P3DM LOD 28/256"
     );
     let nv = r.word()? as usize;
     let nn = r.word()? as usize;
@@ -30,7 +30,7 @@ fn read_lod(r: &mut Reader, report: &mut Model) -> Result<(f32, Mesh)> {
     r.word()?;
     ensure!(
         nv as u64 * 16 + nn as u64 * 12 + nf as u64 * 74 <= r.0.len() as u64,
-        "tailles P3DM invalides"
+        "Invalid P3DM sizes"
     );
     let mut mesh = Mesh::default();
     for _ in 0..nv {
@@ -42,14 +42,14 @@ fn read_lod(r: &mut Reader, report: &mut Model) -> Result<(f32, Mesh)> {
     }
     for _ in 0..nf {
         let count = r.word()?;
-        ensure!(matches!(count, 3 | 4), "face à {count} côtés");
+        ensure!(matches!(count, 3 | 4), "Face has {count} sides");
         let mut corners = Vec::new();
         for _ in 0..count {
             let vertex = r.word()? as usize;
             let normal = r.word()? as usize;
             ensure!(
                 vertex < nv && normal < nn,
-                "indice de point ou normale hors limites"
+                "Point or normal index out of range"
             );
             corners.push(Corner {
                 vertex,
@@ -66,7 +66,7 @@ fn read_lod(r: &mut Reader, report: &mut Model) -> Result<(f32, Mesh)> {
             material: (r.string()?, r.string()?),
         });
     }
-    ensure!(r.take(4)? == b"TAGG", "section TAGG absente");
+    ensure!(r.take(4)? == b"TAGG", "Missing TAGG section");
     let mut proxy_vertices = BTreeSet::new();
     let mut proxy_faces = BTreeSet::new();
     loop {
@@ -75,14 +75,14 @@ fn read_lod(r: &mut Reader, report: &mut Model) -> Result<(f32, Mesh)> {
         let len = r.word()? as usize;
         let data = r.take(len)?;
         if name == "#EndOfFile#" {
-            ensure!(len == 0, "fin TAGG incorrecte");
+            ensure!(len == 0, "Invalid TAGG terminator");
             break;
         }
         if !active {
             continue;
         }
         if name.to_ascii_lowercase().starts_with("proxy:") {
-            ensure!(len == nv + nf, "sélection proxy invalide");
+            ensure!(len == nv + nf, "Invalid proxy selection");
             report.proxies.push(name);
             proxy_vertices.extend((0..nv).filter(|&i| data[i] != 0));
             proxy_faces.extend((0..nf).filter(|&i| data[nv + i] != 0));
@@ -131,10 +131,10 @@ pub fn read_mlod(bytes: &[u8], report: &mut Model) -> Result<Mesh> {
     let mut r = Reader(bytes);
     ensure!(
         r.take(4)? == b"MLOD" && r.word()? == 257,
-        "MLOD version 257 attendu"
+        "Expected MLOD version 257"
     );
     let count = r.word()?;
-    ensure!(count > 0 && count <= 1024, "nombre de LOD invalide");
+    ensure!(count > 0 && count <= 1024, "Invalid LOD count");
     let mut best = None;
     for i in 0..count {
         let (resolution, mesh) = read_lod(&mut r, report).with_context(|| format!("LOD {i}"))?;
@@ -148,8 +148,8 @@ pub fn read_mlod(bytes: &[u8], report: &mut Model) -> Result<Mesh> {
             best = Some(mesh);
         }
     }
-    ensure!(r.0.is_empty(), "données après le dernier LOD");
-    best.context("aucun LOD visuel")
+    ensure!(r.0.is_empty(), "Unexpected data after the final LOD");
+    best.context("No visual LOD found")
 }
 
 pub fn load(
@@ -169,9 +169,9 @@ pub fn load(
         b"ODOL" => {
             ensure!(
                 versions.contains(&version),
-                "version ODOL {version} non prise en charge (voir --odol-version)"
+                "Unsupported ODOL version {version} (see --odol-version)"
             );
-            let exe = tool.context("débinariseur absent")?;
+            let exe = tool.context("No debinarizer configured")?;
             let dir = tempfile::tempdir()?;
             let input = dir.path().join("input.p3d");
             fs::write(&input, bytes)?;
@@ -195,9 +195,9 @@ pub fn load(
                 path
             };
             let status = command.status()?;
-            ensure!(status.success(), "échec du débinariseur ({status})");
+            ensure!(status.success(), "Debinarizer failed ({status})");
             read_mlod(&crate::read_limited(&output)?, report)
         }
-        _ => bail!("signature P3D inconnue"),
+        _ => bail!("Unknown P3D signature"),
     }
 }

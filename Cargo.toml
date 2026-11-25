@@ -1,7 +1,14 @@
 [package]
-name = "arma2obj"
+name = "anyroblox"
 version = "0.1.0"
 edition = "2021"
+
+[lib]
+name = "arma2obj"
+
+[[bin]]
+name = "arma2obj"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1"
