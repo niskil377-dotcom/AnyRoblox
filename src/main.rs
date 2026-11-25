@@ -21,8 +21,8 @@ struct Cli {
     /// ODOL debinarizer (P3DDebin, P3DDebinarizer or adapter)
     #[arg(long, env = "ARMA2OBJ_DEBINARIZER")]
     debinarizer: Option<PathBuf>,
-    /// ODOL versions supported by the executable (comma-separated)
-    #[arg(long, value_delimiter = ',', default_value = "75")]
+    /// Only debinarize these ODOL versions (comma-separated; default: any)
+    #[arg(long, value_delimiter = ',')]
     odol_version: Vec<u32>,
     /// Texture converter (HEMTT or adapter)
     #[arg(long, env = "ARMA2OBJ_PAA_TOOL")]

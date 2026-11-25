@@ -167,9 +167,11 @@ pub fn load(
     match signature {
         b"MLOD" => read_mlod(&bytes, report),
         b"ODOL" => {
+            // An empty list lets the debinarizer try every version; read_mlod
+            // still validates whatever it produces.
             ensure!(
-                versions.contains(&version),
-                "Unsupported ODOL version {version} (see --odol-version)"
+                versions.is_empty() || versions.contains(&version),
+                "ODOL version {version} is excluded by --odol-version"
             );
             let exe = tool.context("No debinarizer configured")?;
             let dir = tempfile::tempdir()?;
@@ -194,8 +196,17 @@ pub fn load(
                 command.arg(input).arg(&path);
                 path
             };
-            let status = command.status()?;
-            ensure!(status.success(), "Debinarizer failed ({status})");
+            let result = command.output()?;
+            if !result.status.success() {
+                let text = String::from_utf8_lossy(&result.stdout).into_owned()
+                    + &String::from_utf8_lossy(&result.stderr);
+                let detail = text.lines().map(str::trim).rfind(|l| !l.is_empty());
+                bail!(
+                    "Debinarizer failed on ODOL v{version} ({}){}",
+                    result.status,
+                    detail.map(|d| format!(": {d}")).unwrap_or_default()
+                );
+            }
             read_mlod(&crate::read_limited(&output)?, report)
         }
         _ => bail!("Unknown P3D signature"),
