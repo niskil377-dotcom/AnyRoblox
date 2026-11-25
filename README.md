@@ -6,7 +6,7 @@ AnyRoblox converts FiveM and Arma 3 models to Wavefront OBJ with MTL materials a
 
 ## Windows desktop app
 
-Download and run [AnyRoblox.exe for Windows x64](https://github.com/niskil377-dotcom/AnyRoblox/releases/latest/download/AnyRoblox.exe). Choose **FiveM → OBJ** or **Arma 3 → OBJ**. Use **Switch workspace** to return to the selection screen.
+Download [AnyRoblox-win-x64.zip](https://github.com/niskil377-dotcom/AnyRoblox/releases/latest/download/AnyRoblox-win-x64.zip), extract the whole folder and run `AnyRoblox.exe`. Keep the `tools` folder next to the executable. Choose **FiveM → OBJ** or **Arma 3 → OBJ**. Use **Switch workspace** to return to the selection screen.
 
 ### FiveM
 
@@ -14,7 +14,7 @@ Select a GTA V Legacy YDR, YDD or YFT file, or choose the `stream` folder of a l
 
 The exporter reads the first available visual level of detail (LOD), including triangles, normals, UV coordinates and the material assigned to each geometry. A YDD can produce several OBJ files. A YFT exports its primary drawable. Animated skeletons, damage fragments, cloth simulation and collisions are outside the export scope. The exporter can write the `DiffuseSampler` texture to PNG from the model itself or from a neighboring YTD with the same base name. Textures shared across resources need additional resolution. Protected files and GTA V Enhanced formats are unsupported.
 
-The desktop build caches CodeWalker.Core 1.0.3 and SharpDX 4.2.0 from NuGet, verifies their SHA-256 hashes and embeds the libraries in the executable. Validation used Legacy YDR and YFT binaries from the Sollumz test suite and a synthetic YDD built from the YDR. The exported models opened in the viewer with 12, 24 and 12 triangles respectively. [CodeWalker](https://github.com/dexyfex/CodeWalker) · [Sollumz test assets](https://github.com/Sollumz/Sollumz/tree/main/tests/assets/gen8)
+The desktop build caches CodeWalker.Core 1.0.3 and SharpDX 4.2.0 from NuGet, verifies their SHA-256 hashes and places the libraries in the release's `tools` folder. Validation used Legacy YDR and YFT binaries from the Sollumz test suite and a synthetic YDD built from the YDR. The exported models opened in the viewer with 12, 24 and 12 triangles respectively. [CodeWalker](https://github.com/dexyfex/CodeWalker) · [Sollumz test assets](https://github.com/Sollumz/Sollumz/tree/main/tests/assets/gen8)
 
 ### Arma 3
 
@@ -37,7 +37,7 @@ The 3D viewport is on the left. Select a model in the **Outliner** on the right.
 
 ### Building the desktop app
 
-The Windows x64 executable includes the WPF viewer, the Rust CLI, P3DDebin and HEMTT. It uses .NET Framework 4.8. To rebuild it, place the conversion tools in `cache/outils` and run `./desktop/build.ps1` in PowerShell.
+The Windows x64 release is a folder: `AnyRoblox.exe` (the WPF viewer) and a `tools` folder holding the Rust CLI, P3DDebin, HEMTT and the FiveM exporter as separate files. The app runs them from there and never unpacks executables at run time. It uses .NET Framework 4.8. To rebuild it, place the conversion tools in `cache/outils` and run `./desktop/build.ps1` in PowerShell. The script writes `dist/AnyRoblox/` and `dist/AnyRoblox-win-x64.zip`. Pass `-SigningThumbprint <thumbprint>` to sign the project's executables with a code-signing certificate.
 
 ## Arma 3 command-line tool
 
