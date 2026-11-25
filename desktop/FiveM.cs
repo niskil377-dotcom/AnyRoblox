@@ -10,6 +10,15 @@ using System.Windows.Media.Imaging;
 using CodeWalker.GameFiles;
 using CodeWalker.Utils;
 using SharpDX;
+using System.Reflection;
+
+[assembly: AssemblyTitle("AnyRoblox FiveM exporter")]
+[assembly: AssemblyDescription("Exports GTA V Legacy YDR, YDD and YFT models to OBJ for AnyRoblox")]
+[assembly: AssemblyProduct("AnyRoblox")]
+[assembly: AssemblyCompany("niskil377-dotcom")]
+[assembly: AssemblyCopyright("See LICENSE")]
+[assembly: AssemblyVersion("0.1.2.0")]
+[assembly: AssemblyFileVersion("0.1.2.0")]
 
 namespace FiveMExport {
     class Converter {

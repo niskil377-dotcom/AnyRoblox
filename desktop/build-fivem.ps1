@@ -26,7 +26,7 @@ foreach($pkg in $packages){
         }
     }finally{$archive.Dispose()}
 }
-& "$Framework\csc.exe" /nologo /codepage:65001 /target:exe /platform:x64 /optimize+ "/out:$dir\FiveMExport.exe" @refs "/reference:$Framework\netstandard.dll" "/reference:$Framework\System.Xaml.dll" "/reference:$Framework\WPF\WindowsBase.dll" "/reference:$Framework\WPF\PresentationCore.dll" "/reference:$Framework\System.Web.Extensions.dll" desktop\FiveM.cs
+& "$Framework\csc.exe" /nologo /codepage:65001 /target:exe /platform:x64 /optimize+ "/out:$dir\FiveMExport.exe" '/win32manifest:desktop\app.manifest' @refs "/reference:$Framework\netstandard.dll" "/reference:$Framework\System.Xaml.dll" "/reference:$Framework\WPF\WindowsBase.dll" "/reference:$Framework\WPF\PresentationCore.dll" "/reference:$Framework\System.Web.Extensions.dll" desktop\FiveM.cs
 if($LASTEXITCODE){throw 'Compilation du convertisseur FiveM en échec.'}
 
 

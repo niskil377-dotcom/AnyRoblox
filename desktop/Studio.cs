@@ -9,9 +9,20 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Markup;
+using System.Runtime.InteropServices;
 using System.Web.Script.Serialization;
 using Microsoft.Win32;
 using Forms=System.Windows.Forms;
+
+[assembly: AssemblyTitle("AnyRoblox")]
+[assembly: AssemblyDescription("Converts FiveM and Arma 3 models to Wavefront OBJ")]
+[assembly: AssemblyProduct("AnyRoblox")]
+[assembly: AssemblyCompany("niskil377-dotcom")]
+[assembly: AssemblyCopyright("See LICENSE")]
+[assembly: AssemblyVersion("0.1.2.0")]
+[assembly: AssemblyFileVersion("0.1.2.0")]
+[assembly: AssemblyInformationalVersion("0.1.2")]
+[assembly: ComVisible(false)]
 
 namespace ArmaStudio {
     public class Studio {
@@ -181,45 +192,20 @@ namespace ArmaStudio {
             return "\""+System.Text.RegularExpressions.Regex.Replace(s,@"(\\*)(""|$)",m=>
                 new string('\\',m.Groups[1].Length*2)+(m.Groups[2].Value=="\""?"\\\"":""))+"\"";
         }
-        static void Extract(string name,string dir){
-            using(var source=Resource(name))
-            using(var file=new FileStream(Path.Combine(dir,name),FileMode.CreateNew,FileAccess.Write))source.CopyTo(file);
-        }
-        // Only reuse helpers extracted by this running instance. A new build starts with fresh binaries.
-        static readonly Dictionary<string,string> ToolDirectories=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
-        static Studio(){
-            AppDomain.CurrentDomain.ProcessExit+=(s,e)=>{
-                lock(ToolDirectories){
-                    foreach(string dir in ToolDirectories.Values){
-                        try{Directory.Delete(dir,true);}
-                        catch(IOException){}
-                        catch(UnauthorizedAccessException){}
-                    }
-                }
-            };
-        }
-        static string PrepareTools(string local,bool gta){
-            string sessions=Path.Combine(Path.GetFullPath(local),"sessions");
-            string key=Path.Combine(sessions,gta?"fivem":"arma");
-            lock(ToolDirectories){
-                string dir;
-                if(ToolDirectories.TryGetValue(key,out dir))return dir;
-                dir=Path.Combine(sessions,Guid.NewGuid().ToString("N"));
-                Directory.CreateDirectory(dir);
-                try{
-                    string[] files=gta?new[]{"FiveMExport.exe","CodeWalker.Core.dll","SharpDX.dll","SharpDX.Mathematics.dll","CodeWalker-Notice.txt"}:new[]{"arma2obj.exe","P3DDebin.exe","hemtt.exe"};
-                    foreach(string name in files)Extract(name,dir);
-                    ToolDirectories.Add(key,dir);
-                    return dir;
-                }catch{
-                    Directory.Delete(dir,true);
-                    throw;
-                }
-            }
+        // Helper tools ship as plain files in the "tools" folder beside AnyRoblox.exe.
+        // They are never embedded, unpacked or copied at run time.
+        static string ToolsDirectory(bool gta){
+            string dir=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"tools");
+            string[] files=gta?new[]{"FiveMExport.exe","CodeWalker.Core.dll","SharpDX.dll","SharpDX.Mathematics.dll"}:new[]{"arma2obj.exe","P3DDebin.exe","hemtt.exe"};
+            foreach(string name in files)
+                if(!File.Exists(Path.Combine(dir,name)))
+                    throw new FileNotFoundException("Missing "+name+" in the tools folder. Extract the whole AnyRoblox zip and keep the tools folder next to AnyRoblox.exe.",name);
+            return dir;
         }
         public static async Task<int> Convert(string local,string flag,string source,string destination) {
             bool gta=flag=="fivem";
-            string tools=PrepareTools(local,gta);
+            string tools=ToolsDirectory(gta);
+            Directory.CreateDirectory(local);
             var info=new ProcessStartInfo(Path.Combine(tools,gta?"FiveMExport.exe":"arma2obj.exe")){
                 WorkingDirectory=local,UseShellExecute=false,CreateNoWindow=true,
                 RedirectStandardOutput=true,RedirectStandardError=true,
