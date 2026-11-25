@@ -1,111 +1,121 @@
 # AnyRoblox (Any Games To Roblox)
 
-Convertit le LOD visuel principal des modèles Arma 3 en Wavefront OBJ, avec matériaux MTL et textures diffuses PNG. Le mode local fonctionne hors ligne. Le mode Workshop utilise exclusivement les métadonnées et le lien de fichier rendus publics par Steam.
+AnyRoblox converts FiveM and Arma 3 models to Wavefront OBJ with MTL materials and diffuse PNG textures. The desktop app includes a 3D viewer. Local conversion works offline. The Arma 3 command-line tool can also download Workshop items when Steam publishes a direct file URL.
 
-## Compiler et lancer
+## Windows desktop app
 
-### Application graphique Windows x64
+Download and run [AnyRoblox.exe for Windows x64](https://github.com/niskil377-dotcom/AnyRoblox/releases/latest/download/AnyRoblox.exe). Choose **FiveM → OBJ** or **Arma 3 → OBJ**. Use **Switch workspace** to return to the selection screen.
 
-L’interface est en anglais. La vue 3D occupe la partie gauche de la fenêtre. À droite, **Outliner** permet de sélectionner un modèle et **Conversion Properties** regroupe les sources et les options d’export. Faites glisser les séparateurs pour redimensionner les panneaux. **Grid** affiche la grille au sol et **Solid** permet d’inspecter la géométrie avec un matériau neutre.
+### FiveM
 
-Télécharger [AnyRoblox.exe pour Windows x64](https://github.com/niskil377-dotcom/AnyRoblox/releases/latest/download/AnyRoblox.exe), puis le lancer. L’accueil propose **FiveM → OBJ** et **Arma 3 → OBJ**. Le bouton **Switch workspace** ramène à cet écran.
+Select a GTA V Legacy YDR, YDD or YFT file, or choose the `stream` folder of a local resource. Click **Convert to OBJ** and choose an output location. The app opens the exported models in the viewer and saves a batch report in the output folder.
 
-**FiveM.** Choisir un fichier YDR, YDD ou YFT de GTA V Legacy, ou sélectionner le dossier `stream` d’une ressource locale. Cliquer sur **Convert to OBJ** et choisir un emplacement de sortie. Studio ouvre les OBJ produits dans la visionneuse et conserve le rapport du lot dans le dossier de sortie.
+The exporter reads the first available visual level of detail (LOD), including triangles, normals, UV coordinates and the material assigned to each geometry. A YDD can produce several OBJ files. A YFT exports its primary drawable. Animated skeletons, damage fragments, cloth simulation and collisions are outside the export scope. The exporter can write the `DiffuseSampler` texture to PNG from the model itself or from a neighboring YTD with the same base name. Textures shared across resources need additional resolution. Protected files and GTA V Enhanced formats are unsupported.
 
-Le parcours FiveM lit le premier LOD visuel disponible, les triangles, les normales, les UV et le matériau de chaque géométrie. Un YDD peut produire plusieurs OBJ. Pour un YFT, l’export couvre le drawable principal. Les squelettes animés, fragments de dégâts, simulations de tissu et collisions restent hors export. Les textures diffuses du paramètre DiffuseSampler peuvent être exportées en PNG depuis le modèle ou un YTD homonyme voisin. Les dépendances de textures partagées entre ressources demandent une résolution supplémentaire. Les fichiers protégés et les formats Enhanced ne sont pas pris en charge.
+The desktop build caches CodeWalker.Core 1.0.3 and SharpDX 4.2.0 from NuGet, verifies their SHA-256 hashes and embeds the libraries in the executable. Validation used Legacy YDR and YFT binaries from the Sollumz test suite and a synthetic YDD built from the YDR. The exported models opened in the viewer with 12, 24 and 12 triangles respectively. [CodeWalker](https://github.com/dexyfex/CodeWalker) · [Sollumz test assets](https://github.com/Sollumz/Sollumz/tree/main/tests/assets/gen8)
 
-La compilation graphique récupère les paquets NuGet CodeWalker.Core 1.0.3 et SharpDX 4.2.0 dans le cache et vérifie leurs empreintes SHA-256. Les bibliothèques sont intégrées à l’EXE. Le parcours a été testé sur les fichiers binaires Legacy YDR et YFT des tests Sollumz et sur un YDD synthétique construit à partir du YDR. La lecture des OBJ résultants dans Studio a donné respectivement 12, 24 et 12 triangles. [CodeWalker](https://github.com/dexyfex/CodeWalker) · [Fichiers de vérification Sollumz](https://github.com/Sollumz/Sollumz/tree/main/tests/assets/gen8)
+### Arma 3
 
-**Arma 3**
+1. Subscribe to the mod in the Arma 3 Steam Workshop and wait for Steam to finish downloading it.
+2. Open AnyRoblox, or click **Refresh** if the app is already open. Select the mod under **Installed mods**.
+3. Click **Convert to OBJ** and choose an output location outside the mod folder. The converted models appear in the viewport. Click **Open output folder** to access the exports and reports.
 
-1. S’abonner au mod dans le Workshop Steam d’Arma 3 et attendre la fin du téléchargement dans le client Steam.
-2. Ouvrir Studio, ou cliquer sur **Refresh** si le téléchargement vient de finir. Sélectionner le mod dans **Installed mods**.
-3. Cliquer sur **Convert to OBJ** et choisir un emplacement de sortie extérieur au mod. Les modèles s’affichent dans la vue 3D. **Open output folder** donne accès aux exports et aux rapports.
+The app searches Steam libraries listed in `libraryfolders.vdf`. It checks `steamapps/workshop/content/107410`, the game's `!Workshop` and `mods` folders, and the `mods` folder beside the executable. **Library…** adds a custom mod folder and remembers it for the next launch. **Folder…** and **PBO / ZIP…** let you select an individual source before conversion.
 
-Studio examine les bibliothèques Steam déclarées dans `libraryfolders.vdf`, notamment `steamapps/workshop/content/107410`, les dossiers `!Workshop` et `mods` du jeu ainsi que le dossier `mods` à côté de l’exécutable. **Library…** ajoute un dossier de mods et mémorise ce choix. **Folder…** et **PBO / ZIP…** permettent de sélectionner directement une source avant de cliquer sur **Convert to OBJ**.
+### Viewing models
 
-Pour inspecter un export existant, choisir **Open OBJ…**. Dans la vue 3D, tourner la molette pour zoomer, maintenir le bouton central et glisser pour orbiter, ou ajouter Maj pour déplacer le point de vue. La touche F recadre le modèle.
+The 3D viewport is on the left. Select a model in the **Outliner** on the right. **Conversion Properties** contains source selection and export controls. Drag the dividers to resize the panels. Toggle **Grid** to show the ground plane or **Solid** to inspect geometry with a neutral material. Use **Open OBJ…** to inspect an existing export.
 
-L’exécutable contient la visionneuse WPF, la CLI Rust, P3DDebin et HEMTT. Il utilise .NET Framework 4.8 sous Windows x64. Pour le reconstruire, placer les outils de conversion dans `cache/outils` puis lancer `./desktop/build.ps1` sous PowerShell.
+| Control | Action |
+|---|---|
+| Mouse wheel | Zoom |
+| Middle mouse button + drag | Orbit |
+| Shift + middle mouse button + drag | Pan |
+| F | Frame the model |
 
-### Ligne de commande
+### Building the desktop app
 
-Avec Rust stable, Cargo et l’éditeur de liens de la cible installés, depuis la racine du projet :
+The Windows x64 executable includes the WPF viewer, the Rust CLI, P3DDebin and HEMTT. It uses .NET Framework 4.8. To rebuild it, place the conversion tools in `cache/outils` and run `./desktop/build.ps1` in PowerShell.
+
+## Arma 3 command-line tool
+
+Install stable Rust, Cargo and the linker for your target, then run the following commands from the project root.
 
 ```sh
 cargo test
 cargo build --release
 cargo install --path . --locked
-arma2obj --workshop "https://steamcommunity.com/sharedfiles/filedetails/?id=3842854567" --output ./sortie/workshop
-arma2obj --workshop 3842854567 --output ./sortie/par-id
-arma2obj --input ./mon-mod --output ./sortie/local
+arma2obj --workshop "https://steamcommunity.com/sharedfiles/filedetails/?id=3842854567" --output ./output/workshop
+arma2obj --workshop 3842854567 --output ./output/by-id
+arma2obj --input ./my-mod --output ./output/local
 ```
 
-L’installation par Cargo est facultative. Le binaire se trouve aussi dans `target/release`. Chaque exécution accepte un dossier de sortie vide ou à créer, extérieur à l’entrée. `--input` accepte un dossier, un ZIP ou un PBO. Les ZIP et les PBO sont extraits dans un dossier temporaire. Les outils externes reçoivent une copie de travail.
+The Cargo install step is optional. The built binary is also available in `target/release`. Each run takes an empty or new output directory outside the input. `--input` accepts a directory, ZIP archive or PBO file. Archives are extracted into temporary directories, and external tools receive working copies.
 
-**Rejouer le cas réel sur ce poste**, depuis PowerShell, avec les outils et le PBO de test placés dans le cache local :
+To reproduce the ACE3 validation on Windows, place the sample PBO and tools at the paths shown below. The cache, validation outputs and external executables are excluded from Git.
 
 ```powershell
-.\target\release\arma2obj.exe --input .\cache\validation\ace3-3.21.3\ace_dogtags.pbo --debinarizer .\cache\outils\P3DDebin.exe --paa-tool .\cache\outils\hemtt.exe --output .\sortie\essai
+.\target\release\arma2obj.exe --input .\cache\validation\ace3-3.21.3\ace_dogtags.pbo --debinarizer .\cache\outils\P3DDebin.exe --paa-tool .\cache\outils\hemtt.exe --output .\sortie\test
 ```
 
-Pour réutiliser les mêmes outils avec la commande courte, définir `ARMA2OBJ_DEBINARIZER` et `ARMA2OBJ_PAA_TOOL` avec leurs chemins. Les options CLI prennent la priorité. Le cache, les sorties de validation et les exécutables externes sont exclus de Git. Pour reconstruire sur le poste de validation avec la chaîne Windows GNU installée pendant le test, ajouter Cargo et dlltool au PATH de la session :
+Set `ARMA2OBJ_DEBINARIZER` and `ARMA2OBJ_PAA_TOOL` to reuse the same tool paths across runs. Explicit CLI options take precedence. On the validation machine, the Windows GNU toolchain used Cargo and dlltool from the following session PATH.
 
 ```powershell
 $env:Path = "$env:USERPROFILE\.cargo\bin;$(Resolve-Path .\cache\outils\rust-gnu);$env:Path"
 cargo build --release
 ```
 
-## Workshop
+## Workshop downloads
 
-Le programme normalise l’ID, effectue le POST anonyme, vérifie l’ID retourné, le résultat, la visibilité publique, le statut de bannissement et l’application Arma 3 (107410). Le rapport conserve notamment le titre et le SteamID de l’auteur. Un téléchargement abouti est conservé sous `./cache/<id>/`, configurable par `--cache`. Si Steam donne une date de mise à jour, le cache distingue les révisions. L’accès public est revérifié avant réutilisation. Le format est déterminé par les premiers octets du ZIP ou la validation de la table PBO. Les signatures 7z, RAR et gzip sont identifiées pour demander une extraction locale. [API Steam](https://partner.steamgames.com/doc/webapi/ISteamRemoteStorage#GetPublishedFileDetails)
+The CLI normalizes the item ID, sends an anonymous POST and checks the returned ID, result code, public visibility, ban status and Arma 3 application ID (107410). The report records the title and the creator's SteamID. Successful downloads go into `./cache/<id>/`. Use `--cache` to change the location. When Steam provides an update timestamp, the cache distinguishes revisions. The CLI checks public access again before reusing a cached file. It identifies ZIP files by their signature and PBO files by validating their entry table. For 7z, RAR and gzip, it identifies the format and asks for local extraction. [Steam API](https://partner.steamgames.com/doc/webapi/ISteamRemoteStorage#GetPublishedFileDetails)
 
-**Essai du 24 novembre 2026.** Pour `3842854567`, Steam a répondu HTTP 200, titre « RZ - M60 REVIVAL », créateur `76561198416561244`, visibilité publique et `file_url=""`. Aucun fichier reçu. Le format, les modèles et les textures de cet article restent indéterminés. Son traitement demande une archive ou un dossier fourni localement. Un refus HTTP, une fiche privée et une panne réseau sont également remontés. Si le réseau bloque Steam, joindre l’archive manuellement. [Fiche testée](https://steamcommunity.com/sharedfiles/filedetails/?id=3842854567)
+**November 24, 2026 test.** For item `3842854567`, Steam returned HTTP 200, the title “RZ - M60 REVIVAL”, creator `76561198416561244`, public visibility and an empty `file_url`. No archive was received, so its format, models and textures could not be verified. To convert that item, supply a local archive or installed mod folder. The CLI also reports HTTP refusal, private items and network failures. If the network blocks Steam, supply the archive manually. [Tested Workshop item](https://steamcommunity.com/sharedfiles/filedetails/?id=3842854567)
 
-**Reforger.** La page « Sample Mod - New Car » présente l’auteur, la description, la licence, la version, la taille et l’identifiant. Les liens publics visibles lors de l’examen menaient notamment aux images et au journal des changements. Aucun lien direct vers l’archive du mod n’a été identifié. Pour une URL Reforger, la CLI lit le titre de la fiche puis signale la limite. `--input` convient aux ressources Arma 3 compatibles, les formats natifs Enfusion sortent du périmètre. [Fiche examinée](https://reforger.armaplatform.com/workshop/5614E482BF83E310-SampleMod-NewCar)
+**Arma Reforger.** The “Sample Mod - New Car” page displayed the author, description, license, version, size and item ID. Visible links included images and the changelog. The review found no direct link to the mod archive. For a Reforger URL, the CLI reads the page title and reports this limitation. Local input supports compatible Arma 3 assets. Native Enfusion formats are outside the scope of this version. [Reviewed Reforger item](https://reforger.armaplatform.com/workshop/5614E482BF83E310-SampleMod-NewCar)
 
-## Formats et outils
+## Arma 3 formats and tools
 
-| Étape | Prise en charge et conventions |
+| Stage | Support and conventions |
 |---|---|
-| Archives | ZIP stocké/Deflate, PBO à entrées contiguës, propriétés Vers, préfixe virtuel et entrées brutes ou Cprs/LZSS. Vérification de la somme additive Cprs. Le pied optionnel SHA de 21 octets est reconnu structurellement. La signature cryptographique et les fichiers bisign ne sont pas vérifiés. |
-| Limites de lecture | 512 Mio par archive ou modèle lu en mémoire, 100 000 entrées par archive, 2 Gio de fichiers décompressés par ZIP et 2 Gio d’extraction PBO par lot. Noms UTF-8 ou ASCII. Les formats de paquet propriétaires ou obfusqués peuvent être refusés. |
-| ODOL | Lecture de la signature et de la version little-endian. La CLI accepte la v75 par défaut. `--odol-version 73,74,75` remplace cette liste pour un autre outil dont on connaît les capacités. Toute sortie du débinariseur repasse par le lecteur MLOD. |
-| MLOD | Version 257, blocs P3DM 28/256, points, normales, triangles/quads, quatre emplacements de coin par face, UV de base, texture et RVMAT par face, TAGG et résolution. Sélection de la plus petite résolution dans [0, 1000[. L’absence de LOD visuel produit un échec explicite. |
-| OBJ et MTL | Indices OBJ à partir de 1, normales et UV par coin, groupes par couple texture/RVMAT. Axe vertical OBJ Y, troisième coordonnée inversée, signe des normales adapté et V remplacé par 1−V. Les PNG transparents alimentent aussi la carte d’opacité. |
-| Textures | Résolution des références dans tous les PBO du lot, par préfixe, puis relativement au modèle. Recherche insensible à la casse ASCII. Pour un dossier extrait, les marqueurs `$PBOPREFIX$` et `$PREFIX$` rétablissent le chemin virtuel. Un PNG homonyme peut fournir la texture directement. Si la conversion est indisponible, le matériau garde sa couleur diffuse et le rapport indique « partiel ». |
-| Éléments inventoriés | Résolutions, LOD HitPoints, proxies, sélections nommées et temps des tags Animation. Pour les model.cfg voisins ou parents, noms des classes de squelettes et d’animations déclarées en texte. Ces déclarations peuvent concerner plusieurs modèles. Les faces des proxies identifiés sont écartées. |
-| Hors export | LOD techniques, collisions, poids et hiérarchie d’os, animations, modèles référencés par proxy, shaders et passes RVMAT, textures procédurales, UV secondaires. Pas de prétraitement ni de résolution d’héritage des model.cfg. Les listes vides indiquent ce que le lecteur a observé. |
+| Archives | Stored and Deflate ZIP entries. PBOs with contiguous entries, Vers properties, virtual prefixes, and raw or Cprs/LZSS entries. The reader verifies the Cprs additive checksum and recognizes the optional 21-byte SHA trailer by its structure. Cryptographic signatures and bisign files are outside its checks. |
+| Read limits | 512 MiB per archive or model read into memory, 100,000 entries per archive, 2 GiB of decompressed files per ZIP and 2 GiB of PBO extraction per batch. Names must be UTF-8 or ASCII. Proprietary or obfuscated packages may be rejected. |
+| ODOL | Reads the signature and little-endian version. The CLI accepts v75 by default. Use `--odol-version 73,74,75` to replace the version list for an external tool with known capabilities. The MLOD reader validates the debinarizer's output. |
+| MLOD | Version 257 with P3DM 28/256 blocks, points, normals, triangles and quads, four corner slots per face, base UVs, per-face texture and RVMAT, TAGG records and LOD resolution. The reader selects the lowest resolution greater than or equal to 0 and less than 1000. It reports a failure if no visual LOD exists. |
+| OBJ and MTL | One-based indices, per-corner normals and UVs, and groups by texture/RVMAT pair. OBJ uses Y up. The exporter negates the third position coordinate, adjusts normal signs and converts V to 1−V. Transparent PNGs also supply the opacity map. |
+| Textures | Resolves references across all PBOs in the batch using the virtual prefix, then relative to the model. Lookup is ASCII case-insensitive. For extracted directories, `$PBOPREFIX$` and `$PREFIX$` markers restore virtual paths. A PNG with the same base name can supply the texture directly. If conversion is unavailable, the material keeps its diffuse color and the report records a partial export. |
+| Inventory | LOD resolutions, HitPoints LODs, proxies, named selections and Animation tag times. For nearby or parent model.cfg files, the inventory lists skeleton and animation classes declared in text. These declarations may cover several models. Faces belonging to identified proxies are excluded. |
+| Outside the export scope | Technical LODs, collisions, bone weights and hierarchies, animations, proxy target models, RVMAT shaders and stages, procedural textures and secondary UVs. The reader inventories model.cfg declarations without preprocessing or inheritance resolution. Empty lists reflect what the reader observed. |
 
-Le parseur PBO suit les champs documentés et la variante LZSS de Bohemia. La disposition MLOD a été croisée avec le lecteur Arma 3 Object Builder puis vérifiée sur un fichier MLOD réel. [Format PBO](https://community.bistudio.com/wiki/PBO) · [LZSS](https://community.bistudio.com/wiki/Compressed_LZSS_File_Format) · [Format MLOD](https://community.bistudio.com/wiki/P3D_File_Format_-_MLOD) · [Lecteur de référence](https://github.com/MrClock8163/Arma3ObjectBuilder/blob/master/Arma3ObjectBuilder/io/data_p3d.py)
+The PBO reader follows the documented fields and Bohemia's LZSS variant. The MLOD layout was cross-checked against the Arma 3 Object Builder reader and verified on an actual MLOD file. [PBO format](https://community.bistudio.com/wiki/PBO) · [LZSS](https://community.bistudio.com/wiki/Compressed_LZSS_File_Format) · [MLOD format](https://community.bistudio.com/wiki/P3D_File_Format_-_MLOD) · [Reference reader](https://github.com/MrClock8163/Arma3ObjectBuilder/blob/master/Arma3ObjectBuilder/io/data_p3d.py)
 
-**Contrats des exécutables**. Les arguments sont transmis séparément via `std::process::Command` :
+### External tool interfaces
 
-- `P3DDebin.exe debin input.p3d -o <dossier>` produit `input_debin.p3d`. Version 1.2.1 testée sur ODOL 75. [Distribution testée](https://github.com/Wesley-TB/P3DDebinarizer/releases/tag/v1.2.1)
-- `P3DDebinarizer.exe input.p3d` attend `input_mlod.p3d`. La distribution archivée de ScripyZz a signalé « Unknown ODOL version » sur le même modèle en console interactive. Elle a également échoué dans une console redirigée. [Dépôt archivé](https://github.com/ScripyZz/P3D-Debinarizer-Arma-3)
-- `hemtt utils paa convert input.paa output.png` convertit le premier mipmap. HEMTT 1.23.1 a été testé. [Commande HEMTT](https://hemtt.dev/utilities/paa/convert.html)
-- Un autre nom d’exécutable sélectionne le contrat générique `outil entrée sortie`, avec deux chemins absolus. Un adaptateur local peut ainsi appeler un logiciel ayant une autre interface.
+The CLI passes arguments separately through `std::process::Command`.
 
-## Rapports et codes de sortie
+- `P3DDebin.exe debin input.p3d -o <folder>` produces `input_debin.p3d`. Version 1.2.1 was tested with ODOL 75. [Tested release](https://github.com/Wesley-TB/P3DDebinarizer/releases/tag/v1.2.1)
+- `P3DDebinarizer.exe input.p3d` is expected to produce `input_mlod.p3d`. The archived ScripyZz release reported “Unknown ODOL version” for the same model in an interactive console. It also failed with redirected console output. [Archived repository](https://github.com/ScripyZz/P3D-Debinarizer-Arma-3)
+- `hemtt utils paa convert input.paa output.png` converts the first mipmap. HEMTT 1.23.1 was tested. [HEMTT command](https://hemtt.dev/utilities/paa/convert.html)
+- Any other executable name selects the generic `tool input output` interface with two absolute paths. A local adapter can use that interface to call software with different arguments.
 
-Le `report.json` à la racine contient les métadonnées Workshop, le chemin en cache, le format reçu, le préfixe et la liste des fichiers de chaque PBO, les dossiers de modèles avec leur statut, ainsi que les erreurs de lot. Chaque dossier de modèle contient son propre `report.json`. Un export réussi contient aussi `model.obj`, `model.mtl` et les PNG disponibles. Le rapport associe les noms de matériaux OBJ aux références Arma.
+## Arma 3 reports and exit codes
 
-Les statuts sont `ok`, `partiel` et `échec`. Un fichier corrompu ou une version inconnue laisse les modèles suivants se convertir. Le code de sortie vaut 0 pour un lot entièrement réussi et 2 pour un lot incomplet ou refusé. Une erreur de préparation ou d’écriture empêchant la création du rapport remonte directement sur stderr.
+The top-level `report.json` records Workshop metadata, the cached path, the detected format, each PBO's prefix and file list, model directories and statuses, and batch errors. Each model directory has its own `report.json`. Successful exports also include `model.obj`, `model.mtl` and the available PNG textures. The report maps OBJ material names back to Arma asset references.
 
-## Vérifications effectuées
+The JSON status values are `ok` (success), `partiel` (partial export) and `échec` (failure). A corrupt file or unknown version allows subsequent models to continue converting. Exit code 0 means the whole batch succeeded. Exit code 2 means the batch was incomplete or refused. A setup or write error that prevents report creation goes directly to stderr.
 
-| Étape | Résultat observé | Limite de la vérification |
+## Arma 3 validation
+
+| Stage | Observed result | Coverage limit |
 |---|---|---|
-| Compilation et tests | Rust stable 1.100, édition 2021, Windows x64 GNU. `cargo build --release` et six tests d’intégration réussis. | Linux et macOS non exécutés. |
-| Steam | ID numérique et URL testés par Cargo. Appel réel de la CLI sur le lien fourni, métadonnées enregistrées et arrêt sur file_url vide. | Téléchargement Steam réussi et réutilisation d’une révision du cache non exercés sur un mod réel. |
-| Extraction | PBO réel `ace_dogtags.pbo` de la distribution ACE3 3.21.3, 48 fichiers inventoriés, préfixe virtuel résolu. SHA-256 de l’entrée identique avant et après. ZIP contenant un PBO, Cprs, somme incorrecte, troncature et chemins invalides testés sur des fixtures synthétiques. | La compression Cprs est vérifiée sur fixture synthétique. |
-| Modèle | MLOD source ACE3 `ace_dogtag.p3d` lu directement, puis ODOL v75 de la distribution débinarisé indépendamment. Les deux donnent le LOD 1, 28 sommets et 26 faces. | Les autres versions ODOL et la fidélité géométrique de modèles complexes restent à vérifier. |
-| Matériaux et Blender | PAA réel converti en PNG 256 × 256. Import OBJ dans Blender 4.4.3, contrôle des 28 sommets et 26 faces, chargement du PNG et inspection du rendu de la plaque, trou transparent visible. | Le rendu valide cet exemple de plaque plane. L’apparence des shaders en jeu et l’orientation sur un modèle asymétrique complexe restent à vérifier. |
-| Reprise | Même lot synthétique avec ODOL inconnu, MLOD tronqué et modèle valide à texture absente. Les deux premiers échouent, le troisième produit OBJ/MTL et un rapport partiel. Autre test avec repli PNG, sélection multirésolution, groupes de matériaux et indices UV. | Proxies, animations et exclusion du LOD HitPoints vérifiés sur données synthétiques. |
+| Build and tests | Stable Rust 1.100, edition 2021, Windows x64 GNU. The release build and all six integration tests passed. | Linux and macOS were not tested. |
+| Steam | Cargo tests covered numeric IDs and URLs. A live CLI request recorded metadata for the supplied Workshop item and stopped on an empty file URL. | A successful Steam payload download and cached revision reuse still need a live mod test. |
+| Extraction | The ACE3 3.21.3 release PBO `ace_dogtags.pbo` yielded 48 files and a resolved virtual prefix. Its SHA-256 was identical before and after conversion. Synthetic fixtures covered ZIP-wrapped PBO, Cprs, invalid checksum, truncation and invalid paths. | Cprs compression was checked with synthetic data. |
+| Geometry | The reader processed the ACE3 source MLOD `ace_dogtag.p3d` and independently debinarized the distributed ODOL v75. Both produced LOD 1 with 28 vertices and 26 faces. | Other ODOL versions and the geometric fidelity of complex models remain unverified. |
+| Materials and Blender | A real PAA produced a 256 × 256 PNG. Blender 4.4.3 imported the OBJ with 28 vertices and 26 faces, loaded the PNG and rendered the tag with its transparent hole visible. | This visual check covers a flat tag. In-game shaders and orientation on complex asymmetric geometry remain unverified. |
+| Error recovery | One synthetic batch contained an unknown ODOL version, a truncated MLOD and a valid model with a missing texture. The first two failed individually. The third produced OBJ/MTL and a partial report. Other checks covered PNG fallback, LOD selection, material grouping and UV indices. | Proxy and animation tags and HitPoints LOD exclusion were checked with synthetic data. |
 
-Les hypothèses de sélection du LOD et d’identification des proxies reposent sur les conventions P3DM. Les sélections nommées peuvent représenter autre chose que des os. Les classes trouvées dans un model.cfg décrivent les déclarations disponibles dans son dossier, avec les limites d’héritage indiquées plus haut. Le rendu et les rapports de la validation locale sont dans `sortie/validation-ace3/`. [Distribution ACE3 testée](https://github.com/acemod/ACE3/releases/tag/v3.21.3) · [MLOD source utilisé](https://github.com/acemod/ACE3/blob/a6c876718e5e86016a41ffd050d584a305633e5b/addons/dogtags/data/ace_dogtag.p3d)
+LOD selection and proxy identification rely on P3DM conventions. Named selections can represent entities other than bones. Classes found in a model.cfg describe the declarations available in its directory, subject to the inheritance limits above. The local validation render and reports are under `sortie/validation-ace3/`. [Tested ACE3 release](https://github.com/acemod/ACE3/releases/tag/v3.21.3) · [Source MLOD](https://github.com/acemod/ACE3/blob/a6c876718e5e86016a41ffd050d584a305633e5b/addons/dogtags/data/ace_dogtag.p3d)
 
-## Dépendances directes
+## Direct Rust dependencies
 
-Clap gère les arguments et les variables d’environnement. Reqwest bloquant utilise TLS natif. Serde et serde_json lisent la réponse Steam et écrivent les rapports. Zip gère le conteneur ZIP, image valide et réencode les PNG, anyhow propage le contexte d’erreur. La dépendance supplémentaire tempfile fournit les répertoires de travail isolés et la publication de fichiers sans écrasement. La lecture binaire utilise des tranches contrôlées et `from_le_bytes` de la bibliothèque standard. Le projet interdit `unsafe` dans son code.
-
+Clap handles arguments and environment variables. Blocking reqwest uses native TLS. Serde and serde_json read Steam responses and write reports. Zip reads ZIP containers, image validates and re-encodes PNGs, and anyhow propagates error context. Tempfile provides isolated working directories and file creation without overwriting existing files. Binary parsing uses bounds-checked slices and the standard library's `from_le_bytes`. The project forbids `unsafe` in its Rust code.
