@@ -26,7 +26,9 @@
  <DockPanel Name="Editor">
   <Border DockPanel.Dock="Top" Background="#202020" Padding="10,5"><DockPanel>
    <Button DockPanel.Dock="Right" Name="ChangeGame" Content="Switch workspace" Padding="10,4"/>
-   <StackPanel Orientation="Horizontal"><TextBlock Text="AnyRoblox" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,18,0"/><Border Background="#414141" CornerRadius="3" Padding="10,3"><TextBlock Name="GameTitle" Text="Workspace"/></Border></StackPanel>
+   <StackPanel><StackPanel Orientation="Horizontal"><TextBlock Text="AnyRoblox" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/><Border Background="#414141" CornerRadius="3" Padding="8,1"><TextBlock Name="GameTitle" Text="Workspace"/></Border></StackPanel>
+    <TextBlock Text="Our goal is to bring 3D models from any game into Roblox." Margin="0,3,0,0"/><TextBlock Text="Currently supported: Arma 3 and FiveM for OBJ export, Arma Reforger for Workshop page inspection via CLI." FontSize="11" Foreground="#BEBEBE" TextWrapping="Wrap"/>
+   </StackPanel>
   </DockPanel></Border>
   <Border DockPanel.Dock="Bottom" Background="#202020" Padding="10,4"><DockPanel><TextBlock DockPanel.Dock="Right" Foreground="#A5A5A5" FontSize="11" Text="MMB  Orbit     Shift + MMB  Pan     Wheel  Zoom" Margin="14,0,0,0"/><TextBlock Name="Status" FontSize="11" Foreground="#CDCDCD" Text="Ready" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text,RelativeSource={RelativeSource Self}}"/></DockPanel></Border>
   <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="360"/><ColumnDefinition Width="4"/><ColumnDefinition Width="305" MinWidth="255" MaxWidth="480"/></Grid.ColumnDefinitions>
@@ -59,7 +61,7 @@
   </Grid>
  </DockPanel>
  <Grid Name="Home" Background="#B5181818"><Border Width="564" Padding="24" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#303030" BorderBrush="#5A5A5A" BorderThickness="1" CornerRadius="5">
-  <StackPanel><TextBlock Text="AnyRoblox" FontSize="26" FontWeight="SemiBold"/><TextBlock Text="Any Games To Roblox" Foreground="#C8C8C8" Margin="0,4,0,20"/>
+  <StackPanel><TextBlock Text="AnyRoblox" FontSize="26" FontWeight="SemiBold"/><TextBlock Text="Our goal is to bring 3D models from any game into Roblox." Margin="0,4,0,4"/><TextBlock Text="Currently supported: Arma 3 and FiveM for OBJ export, Arma Reforger for Workshop page inspection via CLI." Foreground="#C8C8C8" TextWrapping="Wrap" Margin="0,0,0,20"/>
    <UniformGrid Columns="2"><Button Name="ChooseFiveM" Margin="0,0,5,0" Padding="12,18"><StackPanel><TextBlock Text="FiveM → OBJ" Foreground="#FFBD76" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="YDR, YDD and YFT models" Margin="0,4,0,0"/></StackPanel></Button><Button Name="ChooseArma" Margin="5,0,0,0" Padding="12,18"><StackPanel><TextBlock Text="Arma 3 → OBJ" Foreground="#A9CFFF" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="Installed mods, PBO and ZIP" Margin="0,4,0,0"/></StackPanel></Button></UniformGrid>
   </StackPanel>
  </Border></Grid>

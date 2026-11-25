@@ -1,5 +1,7 @@
 # AnyRoblox (Any Games To Roblox)
 
+Our goal is to bring 3D models from any game into Roblox. Currently supported: Arma 3 and FiveM for OBJ export, Arma Reforger for Workshop page inspection via CLI.
+
 AnyRoblox converts FiveM and Arma 3 models to Wavefront OBJ with MTL materials and diffuse PNG textures. The desktop app includes a 3D viewer. Local conversion works offline. The Arma 3 command-line tool can also download Workshop items when Steam publishes a direct file URL.
 
 ## Windows desktop app
