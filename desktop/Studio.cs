@@ -185,30 +185,56 @@ namespace ArmaStudio {
             using(var source=Resource(name))
             using(var file=new FileStream(Path.Combine(dir,name),FileMode.CreateNew,FileAccess.Write))source.CopyTo(file);
         }
-        public static async Task<int> Convert(string local,string flag,string source,string destination) {
-            Directory.CreateDirectory(local);
-            string tools=Path.Combine(local,"sessions",Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tools);
-            try{
-                bool gta=flag=="fivem";
-                string[] files=gta?new[]{"FiveMExport.exe","CodeWalker.Core.dll","SharpDX.dll","SharpDX.Mathematics.dll","CodeWalker-Notice.txt"}:new[]{"arma2obj.exe","P3DDebin.exe","hemtt.exe"};
-                foreach(string n in files)Extract(n,tools);
-                var info=new ProcessStartInfo(Path.Combine(tools,files[0])){
-                    WorkingDirectory=local,UseShellExecute=false,CreateNoWindow=true,
-                    RedirectStandardOutput=true,RedirectStandardError=true,
-                    Arguments=gta?Quote(source)+" "+Quote(destination):flag+" "+Quote(source)+" --output "+Quote(destination)
-                };
-                if(string.IsNullOrWhiteSpace(info.EnvironmentVariables["ARMA2OBJ_DEBINARIZER"]))info.EnvironmentVariables["ARMA2OBJ_DEBINARIZER"]=Path.Combine(tools,"P3DDebin.exe");
-                if(string.IsNullOrWhiteSpace(info.EnvironmentVariables["ARMA2OBJ_PAA_TOOL"]))info.EnvironmentVariables["ARMA2OBJ_PAA_TOOL"]=Path.Combine(tools,"hemtt.exe");
-                using(var p=Process.Start(info)){
-                    var stdout=p.StandardOutput.ReadToEndAsync();
-                    var stderr=p.StandardError.ReadToEndAsync();
-                    await Task.WhenAll(stdout,stderr).ConfigureAwait(false);
-                    p.WaitForExit();
-                    if(!File.Exists(Path.Combine(destination,"report.json")))throw new IOException(stderr.Result.Trim());
-                    return p.ExitCode;
+        // Only reuse helpers extracted by this running instance. A new build starts with fresh binaries.
+        static readonly Dictionary<string,string> ToolDirectories=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
+        static Studio(){
+            AppDomain.CurrentDomain.ProcessExit+=(s,e)=>{
+                lock(ToolDirectories){
+                    foreach(string dir in ToolDirectories.Values){
+                        try{Directory.Delete(dir,true);}
+                        catch(IOException){}
+                        catch(UnauthorizedAccessException){}
+                    }
                 }
-            }finally{if(Directory.Exists(tools))Directory.Delete(tools,true);}
+            };
+        }
+        static string PrepareTools(string local,bool gta){
+            string sessions=Path.Combine(Path.GetFullPath(local),"sessions");
+            string key=Path.Combine(sessions,gta?"fivem":"arma");
+            lock(ToolDirectories){
+                string dir;
+                if(ToolDirectories.TryGetValue(key,out dir))return dir;
+                dir=Path.Combine(sessions,Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(dir);
+                try{
+                    string[] files=gta?new[]{"FiveMExport.exe","CodeWalker.Core.dll","SharpDX.dll","SharpDX.Mathematics.dll","CodeWalker-Notice.txt"}:new[]{"arma2obj.exe","P3DDebin.exe","hemtt.exe"};
+                    foreach(string name in files)Extract(name,dir);
+                    ToolDirectories.Add(key,dir);
+                    return dir;
+                }catch{
+                    Directory.Delete(dir,true);
+                    throw;
+                }
+            }
+        }
+        public static async Task<int> Convert(string local,string flag,string source,string destination) {
+            bool gta=flag=="fivem";
+            string tools=PrepareTools(local,gta);
+            var info=new ProcessStartInfo(Path.Combine(tools,gta?"FiveMExport.exe":"arma2obj.exe")){
+                WorkingDirectory=local,UseShellExecute=false,CreateNoWindow=true,
+                RedirectStandardOutput=true,RedirectStandardError=true,
+                Arguments=gta?Quote(source)+" "+Quote(destination):flag+" "+Quote(source)+" --output "+Quote(destination)
+            };
+            if(string.IsNullOrWhiteSpace(info.EnvironmentVariables["ARMA2OBJ_DEBINARIZER"]))info.EnvironmentVariables["ARMA2OBJ_DEBINARIZER"]=Path.Combine(tools,"P3DDebin.exe");
+            if(string.IsNullOrWhiteSpace(info.EnvironmentVariables["ARMA2OBJ_PAA_TOOL"]))info.EnvironmentVariables["ARMA2OBJ_PAA_TOOL"]=Path.Combine(tools,"hemtt.exe");
+            using(var p=Process.Start(info)){
+                var stdout=p.StandardOutput.ReadToEndAsync();
+                var stderr=p.StandardError.ReadToEndAsync();
+                await Task.WhenAll(stdout,stderr).ConfigureAwait(false);
+                p.WaitForExit();
+                if(!File.Exists(Path.Combine(destination,"report.json")))throw new IOException(stderr.Result.Trim());
+                return p.ExitCode;
+            }
         }
         static Dictionary<string,object> Report(string path){
             return new JavaScriptSerializer{MaxJsonLength=int.MaxValue}.Deserialize<Dictionary<string,object>>(File.ReadAllText(path));

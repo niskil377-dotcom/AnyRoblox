@@ -298,6 +298,8 @@ fn pipeline(opt: &Options, run: &mut Run) -> Result<()> {
         }
     }
     ensure!(!batch.models.is_empty(), "No P3D models found");
+    let mut textures =
+        textures::TextureBatch::new(&batch.assets, opt.paa_tool.as_deref(), Some(work.path()));
     for (i, item) in batch.models.iter().enumerate() {
         let ModelSource {
             file,
@@ -324,12 +326,11 @@ fn pipeline(opt: &Options, run: &mut Run) -> Result<()> {
                 bail!("PBO extraction: {message}")
             }
             let mesh = p3d::load(file, opt.debinarizer.as_deref(), &opt.versions, &mut model)?;
-            obj::export(
+            obj::export_with_textures(
                 &mesh,
                 &dir,
                 vpath.parent().unwrap_or(Path::new("")),
-                &batch.assets,
-                opt.paa_tool.as_deref(),
+                &mut textures,
                 &mut model,
             )
         })();

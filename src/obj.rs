@@ -19,6 +19,22 @@ pub fn export(
     tool: Option<&Path>,
     report: &mut Model,
 ) -> Result<()> {
+    export_with_textures(
+        mesh,
+        dir,
+        parent,
+        &mut textures::TextureBatch::new(assets, tool, None),
+        report,
+    )
+}
+
+pub(crate) fn export_with_textures(
+    mesh: &Mesh,
+    dir: &Path,
+    parent: &Path,
+    textures: &mut textures::TextureBatch<'_>,
+    report: &mut Model,
+) -> Result<()> {
     let mut obj = BufWriter::new(File::create(dir.join("model.obj"))?);
     let mut mtl = BufWriter::new(File::create(dir.join("model.mtl"))?);
     writeln!(obj, "mtllib model.mtl")?;
@@ -45,7 +61,7 @@ pub fn export(
         writeln!(mtl, "newmtl material_{i}\nKd 1 1 1")?;
         if !texture.is_empty() {
             let png = format!("texture_{i}.png");
-            match textures::export(texture, parent, assets, tool, &dir.join(&png), report) {
+            match textures.export(texture, parent, &dir.join(&png), report) {
                 Ok(transparent) => {
                     writeln!(mtl, "map_Kd {png}")?;
                     if transparent {
