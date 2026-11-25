@@ -96,7 +96,7 @@ The PBO reader follows the documented fields and Bohemia's LZSS variant. The MLO
 
 The CLI passes arguments separately through `std::process::Command`.
 
-- `P3DDebin.exe debin input.p3d -o <folder>` produces `input_debin.p3d`. Version 1.2.1 was tested with ODOL 75. [Tested release](https://github.com/Wesley-TB/P3DDebinarizer/releases/tag/v1.2.1)
+- `P3DDebin.exe debin input.p3d -o <folder>` produces `input_debin.p3d`. Version 1.2.1 was tested with ODOL 75, 73 and 70. [Tested release](https://github.com/Wesley-TB/P3DDebinarizer/releases/tag/v1.2.1)
 - `P3DDebinarizer.exe input.p3d` is expected to produce `input_mlod.p3d`. The archived ScripyZz release reported “Unknown ODOL version” for the same model in an interactive console. It also failed with redirected console output. [Archived repository](https://github.com/ScripyZz/P3D-Debinarizer-Arma-3)
 - `hemtt utils paa convert input.paa output.png` converts the first mipmap. HEMTT 1.23.1 was tested. [HEMTT command](https://hemtt.dev/utilities/paa/convert.html)
 - Any other executable name selects the generic `tool input output` interface with two absolute paths. A local adapter can use that interface to call software with different arguments.
@@ -114,7 +114,7 @@ The JSON status values are `ok` (success), `partiel` (partial export) and `éche
 | Build and tests | Stable Rust 1.100, edition 2021, Windows x64 GNU. The release build and all six integration tests passed. | Linux and macOS were not tested. |
 | Steam | Cargo tests covered numeric IDs and URLs. A live CLI request recorded metadata for the supplied Workshop item and stopped on an empty file URL. | A successful Steam payload download and cached revision reuse still need a live mod test. |
 | Extraction | The ACE3 3.21.3 release PBO `ace_dogtags.pbo` yielded 48 files and a resolved virtual prefix. Its SHA-256 was identical before and after conversion. Synthetic fixtures covered ZIP-wrapped PBO, Cprs, invalid checksum, truncation and invalid paths. | Cprs compression was checked with synthetic data. |
-| Geometry | The reader processed the ACE3 source MLOD `ace_dogtag.p3d` and independently debinarized the distributed ODOL v75. Both produced LOD 1 with 28 vertices and 26 faces. | Other ODOL versions and the geometric fidelity of complex models remain unverified. |
+| Geometry | The reader processed the ACE3 source MLOD `ace_dogtag.p3d` and independently debinarized the distributed ODOL v75. Both produced LOD 1 with 28 vertices and 26 faces. On November 26, 2026, all 63 models of Workshop item 831775240 (58 ODOL v73, 1 v70, 4 MLOD) produced OBJ files, including the 13,272-vertex `col_galil_ace22.p3d`. | ODOL versions other than 70, 73 and 75, and the geometric fidelity of complex models, remain unverified. |
 | Materials and Blender | A real PAA produced a 256 × 256 PNG. Blender 4.4.3 imported the OBJ with 28 vertices and 26 faces, loaded the PNG and rendered the tag with its transparent hole visible. | This visual check covers a flat tag. In-game shaders and orientation on complex asymmetric geometry remain unverified. |
 | Error recovery | One synthetic batch contained an unknown ODOL version, a truncated MLOD and a valid model with a missing texture. The first two failed individually. The third produced OBJ/MTL and a partial report. Other checks covered PNG fallback, LOD selection, material grouping and UV indices. | Proxy and animation tags and HitPoints LOD exclusion were checked with synthetic data. |
 
