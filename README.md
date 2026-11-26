@@ -39,7 +39,11 @@ The 3D viewport is on the left. Select a model in the **Outliner** on the right.
 
 ### Building the desktop app
 
-The Windows x64 release is a folder: `AnyRoblox.exe` (the WPF viewer) and a `tools` folder holding the Rust CLI, P3DDebin, HEMTT and the FiveM exporter as separate files. The app runs them from there and never unpacks executables at run time. It uses .NET Framework 4.8. To rebuild it, place the conversion tools in `cache/outils` and run `./desktop/build.ps1` in PowerShell. The script writes `dist/AnyRoblox/` and `dist/AnyRoblox-win-x64.zip`. Pass `-SigningThumbprint <thumbprint>` to sign the project's executables with a code-signing certificate.
+The Windows x64 release is a folder: `AnyRoblox.exe` (the WPF viewer) and a `tools` folder holding the Rust CLI, P3DDebin, HEMTT and the FiveM exporter as separate files. The app runs them from there and never unpacks executables at run time. It uses .NET Framework 4.8.
+
+**Build on GitHub.** Fork the repository, open the fork's **Actions** tab, enable workflows, then choose **Build → Run workflow**. Later pushes to the fork build automatically. When the run finishes, download the `AnyRoblox-win-x64` artifact from the run's page. It holds the same folder as the release zip. The workflow runs the Rust tests, downloads P3DDebin 1.2.1 and HEMTT 1.23.1 from their official releases, checks their SHA-256 hashes and builds the app. See `.github/workflows/build.yml`.
+
+**Build locally.** On Windows, install stable Rust, then run `./desktop/fetch-tools.ps1` and `./desktop/build.ps1` in PowerShell. The first script places the checked tools in `cache/outils`. The second writes `dist/AnyRoblox/` and `dist/AnyRoblox-win-x64.zip`. Pass `-SigningThumbprint <thumbprint>` to `build.ps1` to sign the project's executables with a code-signing certificate.
 
 ## Arma 3 command-line tool
 
