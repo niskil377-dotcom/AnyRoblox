@@ -55,21 +55,66 @@ namespace FiveMExport {
                 return r.ReadBytes((int)f.Length);
             }
         }
-        static IEnumerable<DrawableBase> Drawables(string file){
+        // One drawable placed in the exported model's space.
+        class Part {
+            public DrawableBase Drawable;
+            public Matrix Place;
+            public Part(DrawableBase drawable,Matrix place){Drawable=drawable;Place=place;}
+        }
+        static List<Part> Single(DrawableBase d){return new List<Part>{new Part(d,Matrix.Identity)};}
+        static IEnumerable<List<Part>> Drawables(string file){
             switch(Path.GetExtension(file).ToLowerInvariant()){
                 case ".ydr":
-                    var ydr=new YdrFile();ydr.Load(Read(file,165));yield return ydr.Drawable;break;
+                    var ydr=new YdrFile();ydr.Load(Read(file,165));yield return Single(ydr.Drawable);break;
                 case ".ydd":
                     var ydd=new YddFile();ydd.Load(Read(file,165));
                     if(ydd.Drawables==null || ydd.Drawables.Length==0)throw new InvalidDataException("Empty drawable dictionary.");
-                    foreach(var drawable in ydd.Drawables)yield return drawable;
+                    foreach(var drawable in ydd.Drawables)yield return Single(drawable);
                     break;
                 case ".yft":
                     var yft=new YftFile();yft.Load(Read(file,162));
                     if(yft.Fragment==null)throw new InvalidDataException("Unreadable fragment.");
-                    yield return yft.Fragment.Drawable;
+                    yield return Fragment(yft.Fragment);
                     break;
             }
+        }
+        static DrawableModel[] VisualLod(DrawableBase d){
+            if(d==null || d.DrawableModels==null)return null;
+            var lod=d.DrawableModels;
+            return new[]{lod.High,lod.Med,lod.Low,lod.VLow}.FirstOrDefault(m=>m!=null && m.Length>0);
+        }
+        static bool IsWheel(string bone){return bone!=null && bone.StartsWith("wheel_",StringComparison.OrdinalIgnoreCase);}
+        static bool RightSide(string bone){return bone.StartsWith("wheel_r",StringComparison.OrdinalIgnoreCase);}
+        // A fragment keeps detachable parts in physics children, each modelled around its own
+        // bone. Vehicles usually store one wheel mesh (wheel_lf) and the game reuses it on every
+        // wheel bone, turned 180 degrees on the other side of the car.
+        static List<Part> Fragment(FragType f){
+            var parts=Single(f.Drawable);
+            var skeleton=f.Drawable==null?null:f.Drawable.Skeleton;
+            var bones=skeleton==null || skeleton.Bones==null?null:skeleton.Bones.Items;
+            var group=f.PhysicsLODGroup==null?null:f.PhysicsLODGroup.PhysicsLOD1;
+            var children=group==null || group.Children==null?null:group.Children.data_items;
+            if(bones==null || children==null)return parts;
+            var placed=new List<KeyValuePair<Bone,DrawableBase>>();
+            DrawableBase wheel=null;bool wheelRight=false;
+            foreach(var child in children){
+                var bone=bones.FirstOrDefault(b=>b.Tag==child.BoneTag);
+                if(bone==null)continue;
+                DrawableBase own=VisualLod(child.Drawable1)==null?null:child.Drawable1;
+                placed.Add(new KeyValuePair<Bone,DrawableBase>(bone,own));
+                if(own!=null && wheel==null && IsWheel(bone.Name)){wheel=own;wheelRight=RightSide(bone.Name);}
+            }
+            foreach(var entry in placed){
+                var bone=entry.Key;var drawable=entry.Value;
+                var place=bone.AbsTransform;
+                if(drawable==null){
+                    if(wheel==null || !IsWheel(bone.Name))continue;
+                    drawable=wheel;
+                    if(RightSide(bone.Name)!=wheelRight)place=Matrix.RotationZ((float)Math.PI)*place;
+                }
+                parts.Add(new Part(drawable,place));
+            }
+            return parts;
         }
         static string Num(float value){
             if(float.IsNaN(value)||float.IsInfinity(value))throw new InvalidDataException("Non-finite coordinate.");
@@ -131,22 +176,22 @@ namespace FiveMExport {
                 if(Names.Equals(block.Hashes[i].ToString(),"DiffuseSampler"))return block.Parameters[i].Data as TextureBase;
             return null;
         }
-        static Texture Resolve(TextureBase reference,TextureDictionary embedded,TextureDictionary external){
+        static Texture Resolve(TextureBase reference,IEnumerable<TextureDictionary> dictionaries){
             var direct=reference as Texture;
             if(direct!=null && direct.Data!=null)return direct;
-            foreach(var dict in new[]{embedded,external}){
+            foreach(var dict in dictionaries){
                 Texture match;
                 if(dict!=null && dict.Dict!=null && dict.Dict.TryGetValue(reference.NameHash,out match))return match;
             }
             return null;
         }
-        static void Material(StreamWriter mtl,DrawableGeometry g,TextureDictionary embedded,TextureDictionary external,string dir,List<string> errors){
-            string name="material_"+g.ShaderID;
+        static TextureDictionary Embedded(DrawableBase d){return d==null || d.ShaderGroup==null?null:d.ShaderGroup.TextureDictionary;}
+        static void Material(StreamWriter mtl,string name,DrawableGeometry g,IEnumerable<TextureDictionary> dictionaries,string dir,List<string> errors){
             mtl.WriteLine("newmtl "+name);mtl.WriteLine("Kd 0.85 0.85 0.85");
             var reference=Diffuse(g.Shader);
             if(reference==null)return;
             try{
-                var image=Resolve(reference,embedded,external);
+                var image=Resolve(reference,dictionaries);
                 if(image==null)throw new InvalidDataException("texture not found");
                 if((long)image.Width*image.Height>64L*1024*1024)throw new InvalidDataException("texture too large");
                 var pixels=DDSIO.GetPixels(image,0);
@@ -158,28 +203,41 @@ namespace FiveMExport {
                 mtl.WriteLine("map_Kd "+name+".png");
             }catch(Exception ex){errors.Add(reference.Name+" : "+ex.Message);}
         }
-        static void WriteDrawable(DrawableBase d,TextureDictionary external,string dir,List<string> errors){
-            if(d==null || d.DrawableModels==null)throw new InvalidDataException("Missing drawable.");
-            var lod=d.DrawableModels;
-            var models=new[]{lod.High,lod.Med,lod.Low,lod.VLow}.FirstOrDefault(m=>m!=null && m.Length>0);
-            if(models==null)throw new InvalidDataException("No visual LOD found.");
+        static void WriteDrawable(List<Part> parts,TextureDictionary external,string dir,List<string> errors){
+            var main=parts[0].Drawable;
+            if(main==null || main.DrawableModels==null)throw new InvalidDataException("Missing drawable.");
+            if(VisualLod(main)==null)throw new InvalidDataException("No visual LOD found.");
             Directory.CreateDirectory(dir);
-            var materials=new HashSet<ushort>();
+            // Shader IDs are local to a drawable, so materials are keyed per drawable.
+            // The first drawable keeps the plain material_<id> names.
+            var drawables=new List<DrawableBase>();
+            var materials=new HashSet<string>();
             int pos=1,uv=1,norm=1;
             string tmp=Path.Combine(dir,"model.obj.tmp");
             try{
                 using(var obj=new StreamWriter(tmp))
                 using(var mtl=new StreamWriter(Path.Combine(dir,"model.mtl"))){
                     obj.WriteLine("mtllib model.mtl");
-                    foreach(var model in models){
-                        Matrix bind=Matrix.Identity;
+                    foreach(var part in parts){
+                        var d=part.Drawable;
+                        var models=VisualLod(d);
+                        if(models==null)continue;
+                        int id=drawables.IndexOf(d);
+                        if(id<0){id=drawables.Count;drawables.Add(d);}
+                        string prefix=id==0?"material_":"material_"+id+"_";
+                        var dictionaries=new[]{Embedded(d),Embedded(main),external};
                         var bones=d.Skeleton==null||d.Skeleton.Bones==null?null:d.Skeleton.Bones.Items;
-                        if(model.HasSkin==0 && bones!=null && model.BoneIndex<bones.Length)
-                            bind=bones[model.BoneIndex].AbsTransform;
-                        foreach(var g in model.Geometries){
-                            if(materials.Add(g.ShaderID))Material(mtl,g,d.ShaderGroup==null?null:d.ShaderGroup.TextureDictionary,external,dir,errors);
-                            obj.WriteLine("usemtl material_"+g.ShaderID);
-                            Geometry(obj,g,bind,ref pos,ref uv,ref norm);
+                        foreach(var model in models){
+                            Matrix bind=Matrix.Identity;
+                            if(model.HasSkin==0 && bones!=null && model.BoneIndex<bones.Length)
+                                bind=bones[model.BoneIndex].AbsTransform;
+                            bind*=part.Place;
+                            foreach(var g in model.Geometries){
+                                string name=prefix+g.ShaderID;
+                                if(materials.Add(name))Material(mtl,name,g,dictionaries,dir,errors);
+                                obj.WriteLine("usemtl "+name);
+                                Geometry(obj,g,bind,ref pos,ref uv,ref norm);
+                            }
                         }
                     }
                 }
@@ -204,13 +262,17 @@ namespace FiveMExport {
                     try{
                         TextureDictionary external=null;
                         string ytd=Path.ChangeExtension(file,".ytd");
+                        // Vehicle high-detail models (<name>_hi.yft) use the textures of <name>.ytd.
+                        string stem=Path.GetFileNameWithoutExtension(file);
+                        if(!File.Exists(ytd) && stem.EndsWith("_hi",StringComparison.OrdinalIgnoreCase))
+                            ytd=Path.Combine(Path.GetDirectoryName(file),stem.Substring(0,stem.Length-3)+".ytd");
                         if(File.Exists(ytd)){
                             try{var dict=new YtdFile();dict.Load(Read(ytd,13));external=dict.TextureDict;}
                             catch(Exception ex){errors.Add(ytd+" : "+ex.Message);}
                         }
-                        foreach(var drawable in Drawables(file)){
+                        foreach(var parts in Drawables(file)){
                             string dir=Path.Combine(dest,(++index).ToString("D4")+"-"+Path.GetFileNameWithoutExtension(file));
-                            try{WriteDrawable(drawable,external,dir,errors);exports.Add(Path.GetFileName(dir));}
+                            try{WriteDrawable(parts,external,dir,errors);exports.Add(Path.GetFileName(dir));}
                             catch(Exception ex){errors.Add(file+" : "+ex.Message);}
                         }
                     }catch(Exception ex){errors.Add(file+" : "+ex.Message);}
