@@ -19,9 +19,9 @@ using Forms=System.Windows.Forms;
 [assembly: AssemblyProduct("AnyRoblox")]
 [assembly: AssemblyCompany("niskil377-dotcom")]
 [assembly: AssemblyCopyright("See LICENSE")]
-[assembly: AssemblyVersion("0.1.4.0")]
-[assembly: AssemblyFileVersion("0.1.4.0")]
-[assembly: AssemblyInformationalVersion("0.1.4")]
+[assembly: AssemblyVersion("0.1.5.0")]
+[assembly: AssemblyFileVersion("0.1.5.0")]
+[assembly: AssemblyInformationalVersion("0.1.5")]
 [assembly: ComVisible(false)]
 
 namespace ArmaStudio {
